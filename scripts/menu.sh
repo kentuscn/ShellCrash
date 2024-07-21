@@ -682,6 +682,8 @@ setipv6(){ #ipv6设置
 	echo -----------------------------------------------
 	read -p "请输入对应数字 > " num		
 	case $num in
+	0)
+	;;
 	1)
 		if [ "$ipv6_redir" = "未开启" ]; then 
 			ipv6_support=已开启
@@ -721,16 +723,27 @@ setipv6(){ #ipv6设置
 	esac
 }
 setfirewall(){ #防火墙设置
-	set_cust_host_ipv4(){		
+	set_cust_host_ipv4(){
+		[ -z "$replace_default_host_ipv4" ] && replace_default_host_ipv4="未启用"
+
 		echo -----------------------------------------------
-		echo -e "当前已自动设置透明路由的网段为: \033[32m$(ip a 2>&1 | grep -w 'inet' | grep 'global' | grep 'br' | grep -v 'iot' | grep -E ' 1(92|0|72)\.' | sed 's/.*inet.//g' | sed 's/br.*$//g' | sed 's/metric.*$//g' | tr '\n' ' ' && echo ) \033[0m"
+		echo -e "当前默认透明路由的网段为: \033[32m$(ip a 2>&1 | grep -w 'inet' | grep 'global' | grep 'br' | grep -v 'iot' | grep -E ' 1(92|0|72)\.' | sed 's/.*inet.//g' | sed 's/br.*$//g' | sed 's/metric.*$//g' | tr '\n' ' ' && echo ) \033[0m"
 		echo -e "当前已添加的自定义网段为:\033[36m$cust_host_ipv4\033[0m"
-		echo -----------------------------------------------	
-		echo -e "\033[33m自定义网段不会覆盖自动获取的网段地址，无需重复添加\033[0m"
+		echo -----------------------------------------------
 		echo -e " 1 移除所有自定义网段"
+		echo -e " 2 使用自定义网段覆盖默认网段	\033[36m$replace_default_host_ipv4\033[0m"
 		echo -e " 0 返回上级菜单"
-		read -p "请输入需要额外添加的网段 > " text
+		read -p "请输入对应的序号或需要额外添加的网段 > " text
 		case $text in
+		2)
+			if [ "$replace_default_host_ipv4" == "未启用" ]; then
+				replace_default_host_ipv4="已启用"
+			else
+				replace_default_host_ipv4="未启用"
+			fi
+			setconfig replace_default_host_ipv4 "$replace_default_host_ipv4"
+			set_cust_host_ipv4
+		;;
 		1)
 			unset cust_host_ipv4
 			setconfig cust_host_ipv4
@@ -959,6 +972,8 @@ setboot(){ #启动相关设置
 	read -p "请输入对应数字 > " num
 	echo -----------------------------------------------
 	case "$num" in
+	0)
+	;;
 	1)	
 		if [ "$autostart" = "enable" ]; then
 			[ -d /etc/rc.d ] && cd /etc/rc.d && rm -rf *shellcrash > /dev/null 2>&1 && cd - >/dev/null
@@ -1143,128 +1158,127 @@ set_redir_mod(){ #代理模式设置
 	}
 	[ -n "$(ls /dev/net/tun 2>/dev/null)" ] || ip tuntap >/dev/null 2>&1 && sup_tun=1
 	[ -z "$firewall_area" ] && firewall_area=1
+	[ -z "$firewall_mod" ] && firewall_mod=未设置
 	firewall_area_dsc=$(echo "仅局域网 仅本机 局域网+本机 纯净模式 主-旁转发($bypass_host)" | cut -d' ' -f$firewall_area)
-	if [ -n "$firewall_mod" ];then
+	echo -----------------------------------------------
+	echo -e "当前代理模式为：\033[47;30m$redir_mod\033[0m；ShellCrash核心为：\033[47;30m $crashcore \033[0m"
+	echo -e "\033[33m切换模式后需要手动重启服务以生效！\033[0m"
+	echo -----------------------------------------------
+	[ $firewall_area -le 3 ] && {
+		echo -e " 1 \033[32mRedir模式\033[0m：    Redir转发TCP，不转发UDP"
+		echo -e " 2 \033[36m混合模式\033[0m：     Redir转发TCP，Tun转发UDP"
+		echo -e " 3 \033[32mTproxy模式\033[0m：   Tproxy转发TCP&UDP"
+		echo -e " 4 \033[33mTun模式\033[0m：      Tun转发TCP&UDP(占用高不推荐)"
 		echo -----------------------------------------------
-		echo -e "当前代理模式为：\033[47;30m$redir_mod\033[0m；ShellCrash核心为：\033[47;30m $crashcore \033[0m"
-		echo -e "\033[33m切换模式后需要手动重启服务以生效！\033[0m"
+	}
+	[ "$firewall_area" = 5 ] && {
+		echo -e " 5 \033[32mTCP旁路转发\033[0m：    仅转发TCP流量至旁路由"
+		echo -e " 6 \033[36mT&U旁路转发\033[0m：    转发TCP&UDP流量至旁路由"
 		echo -----------------------------------------------
-		[ $firewall_area -le 3 ] && {
-			echo -e " 1 \033[32mRedir模式\033[0m：    Redir转发TCP，不转发UDP"
-			echo -e " 2 \033[36m混合模式\033[0m：     Redir转发TCP，Tun转发UDP"
-			echo -e " 3 \033[32mTproxy模式\033[0m：   Tproxy转发TCP&UDP"
-			echo -e " 4 \033[33mTun模式\033[0m：      Tun转发TCP&UDP(占用高不推荐)"
-			echo -----------------------------------------------
-		}
-		[ "$firewall_area" = 5 ] && {
-			echo -e " 5 \033[32mTCP旁路转发\033[0m：    仅转发TCP流量至旁路由"
-			echo -e " 6 \033[36mT&U旁路转发\033[0m：    转发TCP&UDP流量至旁路由"
-			echo -----------------------------------------------
-		}
-		echo -e " 7 设置劫持范围：\033[47;30m$firewall_area_dsc\033[0m"
-		echo -e " 8 切换防火墙应用：\033[47;30m$firewall_mod\033[0m"
-		echo -e " 9 ipv6设置：\033[47;30m$ipv6_redir\033[0m"
-		echo " 0 返回上级菜单"
-		read -p "请输入对应数字 > " num	
-		case $num in 
-		0) ;;
-		1)
-			redir_mod=Redir模式
+	}
+	echo -e " 7 设置劫持范围：\033[47;30m$firewall_area_dsc\033[0m"
+	echo -e " 8 切换防火墙应用：\033[47;30m$firewall_mod\033[0m"
+	echo -e " 9 ipv6设置：\033[47;30m$ipv6_redir\033[0m"
+	echo " 0 返回上级菜单"
+	read -p "请输入对应数字 > " num	
+	case $num in 
+	0) ;;
+	1)
+		redir_mod=Redir模式
+		set_redir_config
+		set_redir_mod
+	;;
+	2)
+		if [ -n "$sup_tun" ];then
+			redir_mod=混合模式
 			set_redir_config
-			set_redir_mod
-		;;
-		2)
-			if [ -n "$sup_tun" ];then
-				redir_mod=混合模式
-				set_redir_config
-			else
-				echo -e "\033[31m设备未检测到Tun内核模块，请尝试其他模式或者安装相关依赖！\033[0m"
-				sleep 1
-			fi
-			set_redir_mod
-		;;
-		3)
-			if [ "$firewall_mod" = "iptables" ] ;then
-				if [ -f /etc/init.d/qca-nss-ecm -a "$systype" = "mi_snapshot" ] ;then
-					read -p "xiaomi设备的QOS服务与本模式冲突，是否禁用相关功能？(1/0) > " res
-					[ "$res" = '1' ] && {
-						${CRASHDIR}/misnap_init.sh tproxyfix
-						redir_mod=Tproxy模式
-						set_redir_config
-					}
-				elif [ -n "$(grep -E '^TPROXY$' /proc/net/ip_tables_targets)" ] ;then
-					redir_mod=Tproxy模式
-					set_redir_config
-				else
-					echo -e "\033[31m设备未检测到iptables-mod-tproxy模块，请尝试其他模式或者安装相关依赖！\033[0m"
-					sleep 1					
-				fi	
-			elif [ "$firewall_mod" = "nftables" ] ;then
-				if modprobe nft_tproxy >/dev/null 2>&1;then
-					redir_mod=Tproxy模式
-					set_redir_config
-				else
-					echo -e "\033[31m设备未检测到nft_tproxy内核模块，请尝试其他模式或者安装相关依赖！\033[0m"
-					sleep 1					
-				fi
-			fi
-			set_redir_mod
-		;;
-		4)
-			if [ -n "$sup_tun" ];then
-				redir_mod=Tun模式
-				set_redir_config
-			else
-				echo -e "\033[31m设备未检测到Tun内核模块，请尝试其他模式或者安装相关依赖！\033[0m"
-				sleep 1
-			fi
-			set_redir_mod
-		;;
-		5)
-			redir_mod=TCP旁路转发
-			set_redir_config
-			set_redir_mod
-		;;
-		6)
-			redir_mod=T&U旁路转发
-			set_redir_config
-			set_redir_mod
-		;;
-		7)
-			set_firewall_area
-			set_redir_mod
-		;;	
-		8)
-			if [ "$firewall_mod" = 'iptables' ];then
-				if nft add table inet shellcrash 2>/dev/null;then
-					firewall_mod=nftables
-					redir_mod=Redir模式
-					setconfig redir_mod $redir_mod
-				else
-					echo -e "\033[31m当前设备未安装nftables或者nftables版本过低(<1.0.2),无法切换！\033[0m" 
-				fi
-			else
-				if ckcmd iptables;then
-					firewall_mod=iptables
-					redir_mod=Redir模式
-					setconfig redir_mod $redir_mod
-				else
-					echo -e "\033[31m当前设备未安装iptables,无法切换！\033[0m" 
-				fi
-			fi
+		else
+			echo -e "\033[31m设备未检测到Tun内核模块，请尝试其他模式或者安装相关依赖！\033[0m"
 			sleep 1
-			setconfig firewall_mod $firewall_mod
-			set_redir_mod
-		;;	
-		9)
-			setipv6
-			set_redir_mod
-		;;
-		*)
-			errornum
-		;;
-		esac
-	fi
+		fi
+		set_redir_mod
+	;;
+	3)
+		if [ "$firewall_mod" = "iptables" ] ;then
+			if [ -f /etc/init.d/qca-nss-ecm -a "$systype" = "mi_snapshot" ] ;then
+				read -p "xiaomi设备的QOS服务与本模式冲突，是否禁用相关功能？(1/0) > " res
+				[ "$res" = '1' ] && {
+					${CRASHDIR}/misnap_init.sh tproxyfix
+					redir_mod=Tproxy模式
+					set_redir_config
+				}
+			elif [ -n "$(grep -E '^TPROXY$' /proc/net/ip_tables_targets)" ] ;then
+				redir_mod=Tproxy模式
+				set_redir_config
+			else
+				echo -e "\033[31m设备未检测到iptables-mod-tproxy模块，请尝试其他模式或者安装相关依赖！\033[0m"
+				sleep 1					
+			fi	
+		elif [ "$firewall_mod" = "nftables" ] ;then
+			if modprobe nft_tproxy >/dev/null 2>&1;then
+				redir_mod=Tproxy模式
+				set_redir_config
+			else
+				echo -e "\033[31m设备未检测到nft_tproxy内核模块，请尝试其他模式或者安装相关依赖！\033[0m"
+				sleep 1					
+			fi
+		fi
+		set_redir_mod
+	;;
+	4)
+		if [ -n "$sup_tun" ];then
+			redir_mod=Tun模式
+			set_redir_config
+		else
+			echo -e "\033[31m设备未检测到Tun内核模块，请尝试其他模式或者安装相关依赖！\033[0m"
+			sleep 1
+		fi
+		set_redir_mod
+	;;
+	5)
+		redir_mod=TCP旁路转发
+		set_redir_config
+		set_redir_mod
+	;;
+	6)
+		redir_mod=T&U旁路转发
+		set_redir_config
+		set_redir_mod
+	;;
+	7)
+		set_firewall_area
+		set_redir_mod
+	;;	
+	8)
+		if [ "$firewall_mod" = 'iptables' ];then
+			if nft add table inet shellcrash 2>/dev/null;then
+				firewall_mod=nftables
+				redir_mod=Redir模式
+				setconfig redir_mod $redir_mod
+			else
+				echo -e "\033[31m当前设备未安装nftables或者nftables版本过低(<1.0.2),无法切换！\033[0m" 
+			fi
+		else
+			if ckcmd iptables;then
+				firewall_mod=iptables
+				redir_mod=Redir模式
+				setconfig redir_mod $redir_mod
+			else
+				echo -e "\033[31m当前设备未安装iptables,无法切换！\033[0m" 
+			fi
+		fi
+		sleep 1
+		setconfig firewall_mod $firewall_mod
+		set_redir_mod
+	;;	
+	9)
+		setipv6
+		set_redir_mod
+	;;
+	*)
+		errornum
+	;;
+	esac
 }
 set_dns_mod(){ #DNS设置
 	echo -----------------------------------------------
@@ -1512,6 +1526,8 @@ advanced_set(){ #进阶设置
 	echo -----------------------------------------------
 	read -p "请输入对应数字 > " num
 	case "$num" in
+	0)
+	;;
 	3)
 		setfirewall
 		advanced_set	
