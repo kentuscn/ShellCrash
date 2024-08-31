@@ -186,7 +186,7 @@ mark_time() { #时间戳
 getlanip() { #获取局域网host地址
 	i=1
 	while [ "$i" -le "20" ]; do
-		host_ipv4=$(ip a 2>&1 | grep -w 'inet' | grep 'global' | grep 'brd' | grep -Ev 'utun|iot|peer' | grep -E ' 1(92|0|72)\.' | sed 's/.*inet.//g' | sed 's/br.*$//g' | sed 's/metric.*$//g') #ipv4局域网网段
+		host_ipv4=$(ip a 2>&1 | grep -w 'inet' | grep 'global' | grep 'brd' | grep -Ev 'utun|iot|peer|docker|podman|virbr|vnet|ovs|vmbr|veth|vmnic|vboxnet|lxcbr|xenbr|vEthernet' | grep -E ' 1(92|0|72)\.' | sed 's/.*inet.//g' | sed 's/br.*$//g' | sed 's/metric.*$//g') #ipv4局域网网段
 		[ "$ipv6_redir" = "已开启" ] && host_ipv6=$(ip a 2>&1 | grep -w 'inet6' | grep -E 'global' | sed 's/.*inet6.//g' | sed 's/scope.*$//g') #ipv6公网地址段
 		[ -f "$TMPDIR"/ShellCrash.log ] && break
 		[ -n "$host_ipv4" -a "$ipv6_redir" != "已开启" ] && break
@@ -393,7 +393,7 @@ EOF
 		}
 	}
 	#域名嗅探配置
-	[ "$sniffer" = "已启用" ] && [ "$crashcore" = "meta" ] && sniffer_set="sniffer: {enable: true, parse-pure-ip: true, skip-domain: [Mijia Cloud], sniff: {tls: {ports: [443, 8443]}, http: {ports: [80, 8080-8880]}}}"
+	[ "$sniffer" = "已启用" ] && [ "$crashcore" = "meta" ] && sniffer_set="sniffer: {enable: true, parse-pure-ip: true, skip-domain: [Mijia Cloud], sniff: {tls: {ports: [443, 8443]}, http: {ports: [80, 8080-8880]}, quic: {ports: [443, 8443]}}}"
 	[ "$crashcore" = "clashpre" ] && [ "$dns_mod" = "redir_host" -o "$sniffer" = "已启用" ] && exper="experimental: {ignore-resolve-fail: true, interface-name: en0,sniff-tls-sni: true}"
 	#生成set.yaml
 	cat >"$TMPDIR"/set.yaml <<EOF
@@ -711,7 +711,6 @@ EOF
       "listen": "::",
       "listen_port": $mix_port,
 	  $userpass
-	  "domain_strategy":"prefer_ipv4",
       "sniff": false
     }, {
       "type": "direct",
@@ -723,7 +722,6 @@ EOF
       "tag": "redirect-in",
       "listen": "::",
       "listen_port": $redir_port,
-	  "domain_strategy":"prefer_ipv4",
       "sniff": true,
       "sniff_override_destination": $sniffer
     }, {
@@ -731,7 +729,6 @@ EOF
       "tag": "tproxy-in",
       "listen": "::",
       "listen_port": $tproxy_port,
-	  "domain_strategy":"prefer_ipv4",
       "sniff": true,
       "sniff_override_destination": $sniffer
     }
@@ -749,7 +746,6 @@ EOF
       "inet4_address": "172.19.0.1/30",
       "auto_route": false,
       "stack": "system",
-	  "domain_strategy":"prefer_ipv4",
       "sniff": true,
       "sniff_override_destination": $sniffer
     }
@@ -897,6 +893,7 @@ start_ipt_route() { #iptables-route通用工具
 		RESERVED_IP=$reserve_ipv4
 		HOST_IP=$host_ipv4
 		[ "$3" = 'OUTPUT' ] && HOST_IP="127.0.0.0/8 $local_ipv4"
+		[ "$4" = 'shellcrash_vm' ] && HOST_IP="$vm_ipv4"
 	}
 	[ "$1" = 'ip6tables' ] && {
 		RESERVED_IP=$reserve_ipv6
@@ -929,7 +926,7 @@ start_ipt_route() { #iptables-route通用工具
 	}
 	#tcp&udp分别进代理链
 	proxy_set() {
-		if [ "$3" = 'PREROUTING' ] && [ "$macfilter_type" = "白名单" ] && [ -s "$CRASHDIR"/configs/mac ]; then
+		if [ "$3" = 'PREROUTING' ] && [ "$4" != 'shellcrash_vm' ] && [ "$macfilter_type" = "白名单" ] && [ -s "$CRASHDIR"/configs/mac ];then
 			for mac in $(cat "$CRASHDIR"/configs/mac); do
 				$1 -t $2 -A $4 -p $5 -m mac --mac-source $mac -j $JUMP
 			done
@@ -949,8 +946,9 @@ start_ipt_dns() { #iptables-dns通用工具
 	#$1:iptables/ip6tables	$2:所在的表(OUTPUT/PREROUTING)	$3:新创建的shellcrash表
 	#区分ipv4/ipv6
 	[ "$1" = 'iptables' ] && {
-		HOST_IP=$host_ipv4
+		HOST_IP="$host_ipv4"
 		[ "$2" = 'OUTPUT' ] && HOST_IP="127.0.0.0/8 $local_ipv4"
+		[ "$3" = 'shellcrash_vm_dns' ] && HOST_IP="$vm_ipv4"
 	}
 	[ "$1" = 'ip6tables' ] && HOST_IP=$host_ipv6
 	$1 -t nat -N $3
@@ -969,7 +967,7 @@ start_ipt_dns() { #iptables-dns通用工具
 			$1 -t nat -A $3 -m mac --mac-source $mac -j RETURN
 		done
 	}
-	if [ "$2" = 'PREROUTING' ] && [ -s "$CRASHDIR"/configs/mac ] && [ "$macfilter_type" = "白名单" ]; then
+	if [ "$2" = 'PREROUTING' ] && [ "$3" != 'shellcrash_vm_dns' ] && [ -s "$CRASHDIR"/configs/mac ] && [ "$macfilter_type" = "白名单" ]; then
 		for mac in $(cat "$CRASHDIR"/configs/mac); do
 			$1 -t nat -A $3 -p tcp -m mac --mac-source $mac -j REDIRECT --to-ports $dns_port
 			$1 -t nat -A $3 -p udp -m mac --mac-source $mac -j REDIRECT --to-ports $dns_port
@@ -1103,6 +1101,11 @@ start_iptables() { #iptables配置总入口
 			fi
 		}
 	}
+	[ "$vm_redir" = "已开启" ] && {
+		JUMP="REDIRECT --to-ports $redir_port" #跳转劫持的具体命令
+		start_ipt_dns iptables PREROUTING shellcrash_vm_dns #ipv4-局域网dns转发
+		start_ipt_route iptables nat PREROUTING shellcrash_vm tcp #ipv4-局域网tcp转发
+	}
 	#启动DNS劫持
 	[ "$dns_no" != "已禁用" -a "$dns_redir" != "已开启" -a "$firewall_area" -le 3 ] && {
 		[ "$lan_proxy" = true ] && {
@@ -1131,6 +1134,7 @@ start_nft_route() { #nftables-route通用工具
 	RESERVED_IP=$(echo $reserve_ipv4 | sed 's/ /, /g')
 	HOST_IP=$(echo $host_ipv4 | sed 's/ /, /g')
 	[ "$1" = 'output' ] && HOST_IP="127.0.0.0/8, $(echo $local_ipv4 | sed 's/ /, /g')"
+	[ "$1" = 'prerouting_vm' ] && HOST_IP="$(echo $vm_ipv4 | sed 's/ /, /g')"
 	#添加新链
 	nft add chain inet shellcrash $1 { type $3 hook $2 priority $4 \; }
 	#过滤dns
@@ -1142,7 +1146,7 @@ start_nft_route() { #nftables-route通用工具
 	#nft add rule inet shellcrash $1 ip saddr 198.18.0.0/16 return
 	[ "$firewall_area" = 5 ] && nft add rule inet shellcrash $1 ip saddr $bypass_host return
 	#过滤局域网设备
-	[ -s "$CRASHDIR"/configs/mac ] && {
+	[ "$1" = 'prerouting' ] && [ -s "$CRASHDIR"/configs/mac ] && {
 		MAC=$(awk '{printf "%s, ",$1}' "$CRASHDIR"/configs/mac)
 		if [ "$macfilter_type" = "黑名单" ]; then
 			nft add rule inet shellcrash $1 ether saddr {$MAC} return
@@ -1200,7 +1204,8 @@ start_nft_dns() { #nftables-dns
 	HOST_IP=$(echo $host_ipv4 | sed 's/ /, /g')
 	HOST_IP6=$(echo $host_ipv6 | sed 's/ /, /g')
 	[ "$1" = 'output' ] && HOST_IP="127.0.0.0/8, $(echo $local_ipv4 | sed 's/ /, /g')"
-	nft add chain inet shellcrash "$1"_dns { type nat hook $1 priority -100 \; }
+	[ "$1" = 'prerouting_vm' ] && HOST_IP="$(echo $vm_ipv4 | sed 's/ /, /g')"
+	nft add chain inet shellcrash "$1"_dns { type nat hook $2 priority -100 \; }
 	#防回环
 	nft add rule inet shellcrash "$1"_dns meta mark $routing_mark return
 	nft add rule inet shellcrash "$1"_dns meta skgid { 453, 7890 } return
@@ -1208,7 +1213,7 @@ start_nft_dns() { #nftables-dns
 	nft add rule inet shellcrash "$1"_dns ip saddr != {$HOST_IP} return #屏蔽外部请求
 	[ "$1" = 'prerouting' ] && nft add rule inet shellcrash "$1"_dns ip6 saddr != {$HOST_IP6} return #屏蔽外部请求
 	#过滤局域网设备
-	[ -s "$CRASHDIR"/configs/mac ] && {
+	[ "$1" = 'prerouting' ] && [ -s "$CRASHDIR"/configs/mac ] && {
 		MAC=$(awk '{printf "%s, ",$1}' "$CRASHDIR"/configs/mac)
 		if [ "$macfilter_type" = "黑名单" ]; then
 			nft add rule inet shellcrash "$1"_dns ether saddr {$MAC} return
@@ -1248,8 +1253,8 @@ start_nftables() { #nftables配置总入口
 	start_nft_wan
 	#启动DNS劫持
 	[ "$dns_no" != "已禁用" -a "$dns_redir" != "已开启" -a "$firewall_area" -le 3 ] && {
-		[ "$lan_proxy" = true ] && start_nft_dns prerouting #局域网dns转发
-		[ "$local_proxy" = true ] && start_nft_dns output   #本机dns转发
+		[ "$lan_proxy" = true ] && start_nft_dns prerouting prerouting #局域网dns转发
+		[ "$local_proxy" = true ] && start_nft_dns output output #本机dns转发
 	}
 	#分模式设置流量劫持
 	[ "$redir_mod" = "Redir模式" ] && {
@@ -1257,7 +1262,7 @@ start_nftables() { #nftables配置总入口
 		[ "$lan_proxy" = true ] && start_nft_route prerouting prerouting nat -100
 		[ "$local_proxy" = true ] && start_nft_route output output nat -100
 	}
-	[ "$redir_mod" = "Tproxy模式" ] && modprobe nft_tproxy >/dev/null 2>&1 && {
+	[ "$redir_mod" = "Tproxy模式" ] && modprobe nft_tproxy >/dev/null 2>&1 || lsmod 2>/dev/null | grep -q nft_tproxy && {
 		JUMP="meta l4proto {tcp, udp} mark set $fwmark tproxy to :$tproxy_port" #跳转劫持的具体命令
 		[ "$lan_proxy" = true ] && start_nft_route prerouting prerouting filter -150
 		[ "$local_proxy" = true ] && {
@@ -1277,7 +1282,7 @@ start_nftables() { #nftables配置总入口
 			nft list chain inet fw4 forward >/dev/null 2>&1 || nft add chain inet fw4 forward { type filter hook forward priority filter \; } 2>/dev/null
 			nft list chain inet fw4 input >/dev/null 2>&1 || nft add chain inet fw4 input { type filter hook input priority filter \; } 2>/dev/null
 			nft list chain inet fw4 forward | grep -q 'oifname "utun" accept' || nft insert rule inet fw4 forward oifname "utun" accept
-			nft list chain inet fw4 input | grep -q 'oifname "utun" accept' || nft insert rule inet fw4 input iifname "utun" accept
+			nft list chain inet fw4 input | grep -q 'iifname "utun" accept' || nft insert rule inet fw4 input iifname "utun" accept
 		}
 		[ "$local_proxy" = true ] && start_nft_route output output route -150
 	}
@@ -1286,6 +1291,11 @@ start_nftables() { #nftables配置总入口
 		[ "$redir_mod" = "TCP旁路转发" ] && JUMP="meta l4proto tcp mark set $fwmark"        #跳转劫持的具体命令
 		[ "$lan_proxy" = true ] && start_nft_route prerouting prerouting filter -150
 		[ "$local_proxy" = true ] && start_nft_route output output route -150
+	}
+	[ "$vm_redir" = "已开启" ] && {
+		start_nft_dns prerouting_vm prerouting
+		JUMP="meta l4proto tcp redirect to $redir_port" #跳转劫持的具体命令
+		start_nft_route prerouting_vm prerouting nat -100
 	}
 	#屏蔽QUIC
 	[ "$quic_rj" = '已启用' -a "$lan_proxy" = true -a "$redir_mod" != "Redir模式" ] && {
@@ -1350,90 +1360,96 @@ stop_firewall() { #还原防火墙配置
 	#获取局域网host地址
 	getlanip
 	#重置iptables相关规则
-	ckcmd iptables && {
+	ckcmd iptables -w && {
 		#清理shellcrash自建表
-		for table in shellcrash_dns shellcrash shellcrash_out shellcrash_dns_out; do
-			iptables -t nat -F $table 2>/dev/null
-			iptables -t nat -X $table 2>/dev/null
+		for table in shellcrash_dns shellcrash shellcrash_out shellcrash_dns_out shellcrash_vm shellcrash_vm_dns; do
+			iptables -w -t nat -F $table 2>/dev/null
+			iptables -w -t nat -X $table 2>/dev/null
 		done
 		for table in shellcrash_mark shellcrash_mark_out; do
-			iptables -t mangle -F $table 2>/dev/null
-			iptables -t mangle -X $table 2>/dev/null
+			iptables -w -t mangle -F $table 2>/dev/null
+			iptables -w -t mangle -X $table 2>/dev/null
 		done
 		#dns
-		iptables -t nat -D PREROUTING -p tcp --dport 53 -j shellcrash_dns 2>/dev/null
-		iptables -t nat -D PREROUTING -p udp --dport 53 -j shellcrash_dns 2>/dev/null
-		iptables -t nat -D OUTPUT -p udp --dport 53 -j shellcrash_dns_out 2>/dev/null
-		iptables -t nat -D OUTPUT -p tcp --dport 53 -j shellcrash_dns_out 2>/dev/null
+		iptables -w -t nat -D PREROUTING -p tcp --dport 53 -j shellcrash_dns 2>/dev/null
+		iptables -w -t nat -D PREROUTING -p udp --dport 53 -j shellcrash_dns 2>/dev/null
+		iptables -w -t nat -D OUTPUT -p udp --dport 53 -j shellcrash_dns_out 2>/dev/null
+		iptables -w -t nat -D OUTPUT -p tcp --dport 53 -j shellcrash_dns_out 2>/dev/null
 		#redir
-		iptables -t nat -D PREROUTING -p tcp $ports -j shellcrash 2>/dev/null
-		iptables -t nat -D PREROUTING -p tcp -d 198.18.0.0/16 -j shellcrash 2>/dev/null
-		iptables -t nat -D OUTPUT -p tcp $ports -j shellcrash_out 2>/dev/null
-		iptables -t nat -D OUTPUT -p tcp -d 198.18.0.0/16 -j shellcrash_out 2>/dev/null
+		iptables -w -t nat -D PREROUTING -p tcp $ports -j shellcrash 2>/dev/null
+		iptables -w -t nat -D PREROUTING -p tcp -d 198.18.0.0/16 -j shellcrash 2>/dev/null
+		iptables -w -t nat -D OUTPUT -p tcp $ports -j shellcrash_out 2>/dev/null
+		iptables -w -t nat -D OUTPUT -p tcp -d 198.18.0.0/16 -j shellcrash_out 2>/dev/null
+		#vm_dns
+		iptables -w -t nat -D PREROUTING -p tcp --dport 53 -j shellcrash_vm_dns 2>/dev/null
+		iptables -w -t nat -D PREROUTING -p udp --dport 53 -j shellcrash_vm_dns 2>/dev/null
+		#vm_redir
+		iptables -w -t nat -D PREROUTING -p tcp $ports -j shellcrash_vm 2>/dev/null
+		iptables -w -t nat -D PREROUTING -p tcp -d 198.18.0.0/16 -j shellcrash_vm 2>/dev/null
 		#TPROXY&tun
-		iptables -t mangle -D PREROUTING -p tcp $ports -j shellcrash_mark 2>/dev/null
-		iptables -t mangle -D PREROUTING -p udp $ports -j shellcrash_mark 2>/dev/null
-		iptables -t mangle -D PREROUTING -p tcp -d 198.18.0.0/16 -j shellcrash_mark 2>/dev/null
-		iptables -t mangle -D PREROUTING -p udp -d 198.18.0.0/16 -j shellcrash_mark 2>/dev/null
-		iptables -t mangle -D OUTPUT -p tcp $ports -j shellcrash_mark_out 2>/dev/null
-		iptables -t mangle -D OUTPUT -p udp $ports -j shellcrash_mark_out 2>/dev/null
-		iptables -t mangle -D OUTPUT -p tcp -d 198.18.0.0/16 -j shellcrash_mark_out 2>/dev/null
-		iptables -t mangle -D OUTPUT -p udp -d 198.18.0.0/16 -j shellcrash_mark_out 2>/dev/null
-		iptables -t mangle -D PREROUTING -m mark --mark $fwmark -p tcp -j TPROXY --on-port $tproxy_port 2>/dev/null
-		iptables -t mangle -D PREROUTING -m mark --mark $fwmark -p udp -j TPROXY --on-port $tproxy_port 2>/dev/null
+		iptables -w -t mangle -D PREROUTING -p tcp $ports -j shellcrash_mark 2>/dev/null
+		iptables -w -t mangle -D PREROUTING -p udp $ports -j shellcrash_mark 2>/dev/null
+		iptables -w -t mangle -D PREROUTING -p tcp -d 198.18.0.0/16 -j shellcrash_mark 2>/dev/null
+		iptables -w -t mangle -D PREROUTING -p udp -d 198.18.0.0/16 -j shellcrash_mark 2>/dev/null
+		iptables -w -t mangle -D OUTPUT -p tcp $ports -j shellcrash_mark_out 2>/dev/null
+		iptables -w -t mangle -D OUTPUT -p udp $ports -j shellcrash_mark_out 2>/dev/null
+		iptables -w -t mangle -D OUTPUT -p tcp -d 198.18.0.0/16 -j shellcrash_mark_out 2>/dev/null
+		iptables -w -t mangle -D OUTPUT -p udp -d 198.18.0.0/16 -j shellcrash_mark_out 2>/dev/null
+		iptables -w -t mangle -D PREROUTING -m mark --mark $fwmark -p tcp -j TPROXY --on-port $tproxy_port 2>/dev/null
+		iptables -w -t mangle -D PREROUTING -m mark --mark $fwmark -p udp -j TPROXY --on-port $tproxy_port 2>/dev/null
 		#tun
-		iptables -D FORWARD -o utun -j ACCEPT 2>/dev/null
+		iptables -w -D FORWARD -o utun -j ACCEPT 2>/dev/null
 		#屏蔽QUIC
 		[ "$dns_mod" != "fake-ip" -a "$cn_ip_route" = "已开启" ] && set_cn_ip='-m set ! --match-set cn_ip dst'
-		iptables -D INPUT -p udp --dport 443 $set_cn_ip -j REJECT 2>/dev/null
+		iptables -w -D INPUT -p udp --dport 443 $set_cn_ip -j REJECT 2>/dev/null
 		#公网访问
 		for ip in $host_ipv4 $local_ipv4 $reserve_ipv4; do
-			iptables -D INPUT -p tcp -s $ip --dport $mix_port -j ACCEPT 2>/dev/null
-			iptables -D INPUT -p tcp -s $ip --dport $db_port -j ACCEPT 2>/dev/null
+			iptables -w -D INPUT -p tcp -s $ip --dport $mix_port -j ACCEPT 2>/dev/null
+			iptables -w -D INPUT -p tcp -s $ip --dport $db_port -j ACCEPT 2>/dev/null
 		done
-		iptables -D INPUT -p tcp -d 127.0.0.1 -j ACCEPT 2>/dev/null
-		iptables -D INPUT -p tcp --dport $mix_port -j REJECT 2>/dev/null
-		iptables -D INPUT -p tcp --dport $mix_port -j ACCEPT 2>/dev/null
-		iptables -D INPUT -p tcp --dport $db_port -j REJECT 2>/dev/null
-		iptables -D INPUT -p tcp --dport $db_port -j ACCEPT 2>/dev/null
+		iptables -w -D INPUT -p tcp -d 127.0.0.1 -j ACCEPT 2>/dev/null
+		iptables -w -D INPUT -p tcp --dport $mix_port -j REJECT 2>/dev/null
+		iptables -w -D INPUT -p tcp --dport $mix_port -j ACCEPT 2>/dev/null
+		iptables -w -D INPUT -p tcp --dport $db_port -j REJECT 2>/dev/null
+		iptables -w -D INPUT -p tcp --dport $db_port -j ACCEPT 2>/dev/null
 	}
 	#重置ipv6规则
-	ckcmd ip6tables && {
+	ckcmd ip6tables -w && {
 		#清理shellcrash自建表
 		for table in shellcrashv6_dns shellcrashv6 shellcrashv6_out; do
-			ip6tables -t nat -F $table 2>/dev/null
-			ip6tables -t nat -X $table 2>/dev/null
+			ip6tables -w -t nat -F $table 2>/dev/null
+			ip6tables -w -t nat -X $table 2>/dev/null
 		done
 		for table in shellcrashv6_mark shellcrashv6_mark_out; do
-			ip6tables -t mangle -F $table 2>/dev/null
-			ip6tables -t mangle -X $table 2>/dev/null
+			ip6tables -w -t mangle -F $table 2>/dev/null
+			ip6tables -w -t mangle -X $table 2>/dev/null
 		done
-		ip6tables -t mangle -F shellcrashv6_mark 2>/dev/null
-		ip6tables -t mangle -X shellcrashv6_mark 2>/dev/null
+		ip6tables -w -t mangle -F shellcrashv6_mark 2>/dev/null
+		ip6tables -w -t mangle -X shellcrashv6_mark 2>/dev/null
 		#dns
-		ip6tables -t nat -D PREROUTING -p tcp --dport 53 -j shellcrashv6_dns 2>/dev/null
-		ip6tables -t nat -D PREROUTING -p udp --dport 53 -j shellcrashv6_dns 2>/dev/null
+		ip6tables -w -t nat -D PREROUTING -p tcp --dport 53 -j shellcrashv6_dns 2>/dev/null
+		ip6tables -w -t nat -D PREROUTING -p udp --dport 53 -j shellcrashv6_dns 2>/dev/null
 		#redir
-		ip6tables -t nat -D PREROUTING -p tcp $ports -j shellcrashv6 2>/dev/null
-		ip6tables -t nat -D OUTPUT -p tcp $ports -j shellcrashv6_out 2>/dev/null
-		ip6tables -D INPUT -p udp --dport 53 -j REJECT 2>/dev/null
+		ip6tables -w -t nat -D PREROUTING -p tcp $ports -j shellcrashv6 2>/dev/null
+		ip6tables -w -t nat -D OUTPUT -p tcp $ports -j shellcrashv6_out 2>/dev/null
+		ip6tables -w -D INPUT -p udp --dport 53 -j REJECT 2>/dev/null
 		#mark
-		ip6tables -t mangle -D PREROUTING -p tcp $ports -j shellcrashv6_mark 2>/dev/null
-		ip6tables -t mangle -D PREROUTING -p udp $ports -j shellcrashv6_mark 2>/dev/null
-		ip6tables -t mangle -D OUTPUT -p tcp $ports -j shellcrashv6_mark_out 2>/dev/null
-		ip6tables -t mangle -D OUTPUT -p udp $ports -j shellcrashv6_mark_out 2>/dev/null
-		ip6tables -D INPUT -p udp --dport 443 $set_cn_ip -j REJECT 2>/dev/null
+		ip6tables -w -t mangle -D PREROUTING -p tcp $ports -j shellcrashv6_mark 2>/dev/null
+		ip6tables -w -t mangle -D PREROUTING -p udp $ports -j shellcrashv6_mark 2>/dev/null
+		ip6tables -w -t mangle -D OUTPUT -p tcp $ports -j shellcrashv6_mark_out 2>/dev/null
+		ip6tables -w -t mangle -D OUTPUT -p udp $ports -j shellcrashv6_mark_out 2>/dev/null
+		ip6tables -w -D INPUT -p udp --dport 443 $set_cn_ip -j REJECT 2>/dev/null
 		#tun
-		ip6tables -D FORWARD -o utun -j ACCEPT 2>/dev/null
-		ip6tables -D FORWARD -p udp --dport 443 -o utun -j REJECT >/dev/null 2>&1
+		ip6tables -w -D FORWARD -o utun -j ACCEPT 2>/dev/null
+		ip6tables -w -D FORWARD -p udp --dport 443 -o utun -j REJECT >/dev/null 2>&1
 		#屏蔽QUIC
 		[ "$dns_mod" != "fake-ip" -a "$cn_ipv6_route" = "已开启" ] && set_cn_ip6='-m set ! --match-set cn_ip6 dst'
-		ip6tables -D INPUT -p udp --dport 443 $set_cn_ip6 -j REJECT 2>/dev/null
+		ip6tables -w -D INPUT -p udp --dport 443 $set_cn_ip6 -j REJECT 2>/dev/null
 		#公网访问
-		ip6tables -D INPUT -p tcp --dport $mix_port -j REJECT 2>/dev/null
-		ip6tables -D INPUT -p tcp --dport $mix_port -j ACCEPT 2>/dev/null
-		ip6tables -D INPUT -p tcp --dport $db_port -j REJECT 2>/dev/null
-		ip6tables -D INPUT -p tcp --dport $db_port -j ACCEPT 2>/dev/null
+		ip6tables -w -D INPUT -p tcp --dport $mix_port -j REJECT 2>/dev/null
+		ip6tables -w -D INPUT -p tcp --dport $mix_port -j ACCEPT 2>/dev/null
+		ip6tables -w -D INPUT -p tcp --dport $db_port -j REJECT 2>/dev/null
+		ip6tables -w -D INPUT -p tcp --dport $db_port -j ACCEPT 2>/dev/null
 	}
 	#清理ipset规则
 	ipset destroy cn_ip >/dev/null 2>&1
@@ -1653,16 +1669,13 @@ network_check() { #检查是否联网
 		ping -c 3 $host >/dev/null 2>&1 && return 0
 		sleep 2
 	done
-	logger "当前设备无法连接网络，已取消开机启动！" 33
+	logger "当前设备无法连接网络，已停止启动！" 33
 	exit 1
 }
 bfstart() { #启动前
 	routing_mark=$((fwmark + 2))
-	#启动前等待
-	[ ! -f "$TMPDIR"/crash_start_time ] && {
-		#检测网络连接
-		network_check
-	}
+	#检测网络连接
+	[ ! -f "$TMPDIR"/crash_start_time ] && ckcmd ping && network_check
 	[ ! -d "$BINDIR"/ui ] && mkdir -p "$BINDIR"/ui
 	[ -z "$crashcore" ] && crashcore=clash
 	#执行条件任务
