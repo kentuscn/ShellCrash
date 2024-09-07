@@ -107,7 +107,7 @@ ckstatus(){
 	#检查新手引导
 	if [ -z "$userguide" ];then
 		setconfig userguide 1
-		source ${CRASHDIR}/update.sh && userguide
+		source ${CRASHDIR}/webget.sh && userguide
 	fi
 	#检查执行权限
 	[ ! -x ${CRASHDIR}/start.sh ] && chmod +x ${CRASHDIR}/start.sh
@@ -122,7 +122,7 @@ ckstatus(){
 				core_v=$($file -v 2>/dev/null | head -n 1 | sed 's/ linux.*//;s/.* //')
 				[ -z "$core_v" ] && core_v=$($file version 2>/dev/null | grep -Eo 'version .*' | sed 's/version //')
 				if [ -n "$core_v" ];then
-					source ${CRASHDIR}/update.sh && setcoretype && \
+					source ${CRASHDIR}/webget.sh && setcoretype && \
 					mv -f $file ${TMPDIR}/CrashCore && \
 					tar -zcf ${BINDIR}/CrashCore.tar.gz ${tar_para} -C ${TMPDIR} CrashCore && \
 					echo -e "\033[32m内核加载完成！\033[0m " && \
@@ -188,7 +188,7 @@ start_core(){
 		echo -e "\033[33m没有找到${crashcore}配置文件，尝试生成providers配置文件！\033[0m"
 		[ "$crashcore" = singboxp ] && coretype=singbox
 		[ "$crashcore" = meta -o "$crashcore" = clashpre ] && coretype=clash
-		source ${CRASHDIR}/update.sh && gen_${coretype}_providers
+		source ${CRASHDIR}/webget.sh && gen_${coretype}_providers
 	elif [ -s $core_config -o -n "$Url" -o -n "$Https" ];then
 		${CRASHDIR}/start.sh start
 		#设置循环检测以判定服务启动是否成功
@@ -205,7 +205,7 @@ start_core(){
 		[ -n "$test" -o -n "$(pidof CrashCore)" ] && startover
 	else
 		echo -e "\033[31m没有找到${crashcore}配置文件，请先导入配置文件！\033[0m"
-		source ${CRASHDIR}/update.sh && set_core_config
+		source ${CRASHDIR}/webget.sh && set_core_config
 	fi
 }
 start_service(){
@@ -824,10 +824,15 @@ checkport(){ #自动检查端口冲突
 	done
 }
 macfilter(){ #局域网设备过滤
+	get_devinfo(){
+		dev_ip=$(cat $dhcpdir | grep $dev | awk '{print $3}') && [ -z "$dev_ip" ] && dev_ip=$dev
+		dev_mac=$(cat $dhcpdir | grep $dev | awk '{print $2}') && [ -z "$dev_mac" ] && dev_mac=$dev
+		dev_name=$(cat $dhcpdir | grep $dev | awk '{print $4}') && [ -z "$dev_name" ] && dev_name='未知设备'	
+	}
 	add_mac(){
 		echo -----------------------------------------------
 		echo 已添加的mac地址：
-		cat ${CRASHDIR}/configs/mac
+		cat ${CRASHDIR}/configs/mac 2>/dev/null
 		echo -----------------------------------------------
 		echo -e "\033[33m序号   设备IP       设备mac地址       设备名称\033[32m"
 		cat $dhcpdir | awk '{print " "NR" "$3,$2,$4}'
@@ -861,34 +866,80 @@ macfilter(){ #局域网设备过滤
 			add_mac
 		fi
 	}
-	del_mac(){
+	add_ip(){
 		echo -----------------------------------------------
-		if [ -z "$(cat ${CRASHDIR}/configs/mac)" ];then
-			echo -e "\033[31m列表中没有需要移除的设备！\033[0m"
+		echo "已添加的IP地址(段)："
+		cat ${CRASHDIR}/configs/ip_filter 2>/dev/null
+		echo -----------------------------------------------
+		echo -e "\033[33m序号   设备IP     设备名称\033[32m"
+		cat $dhcpdir | awk '{print " "NR" "$3,$4}'
+		echo -e "\033[0m-----------------------------------------------"
+		echo -e "手动输入时仅支持\033[32m 192.168.1.0/24\033[0m 或 \033[32m192.168.1.0\033[0m 的形式"
+		echo -e "不支持ipv6地址过滤，如有需求请使用mac地址过滤"
+		echo -e " 0 或回车 结束添加"
+		echo -----------------------------------------------
+		read -p "请输入对应序号或直接输入IP地址段 > " num
+		if [ -z "$num" -o "$num" = 0 ]; then
+			i=
+		elif [ -n "$(echo $num | grep -aE '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(/(3[0-2]|[12]?[0-9]))?$')" ];then
+			if [ -z "$(cat ${CRASHDIR}/configs/ip_filter | grep -E "$num")" ];then
+				echo $num | grep -oE '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(/(3[0-2]|[12]?[0-9]))?$' >> ${CRASHDIR}/configs/ip_filter
+			else
+				echo -----------------------------------------------
+				echo -e "\033[31m已添加的地址，请勿重复添加！\033[0m"
+			fi
+			add_ip
+		elif [ $num -le $(cat $dhcpdir 2>/dev/null | awk 'END{print NR}') ]; then
+			ipadd=$(cat $dhcpdir | awk '{print $3}' | sed -n "$num"p)
+			if [ -z "$(cat ${CRASHDIR}/configs/mac | grep -E "$ipadd")" ];then
+				echo $ipadd >> ${CRASHDIR}/configs/ip_filter
+			else
+				echo -----------------------------------------------
+				echo -e "\033[31m已添加的地址，请勿重复添加！\033[0m"
+			fi
+			add_ip
 		else
-			echo -e "\033[33m序号   设备IP       设备mac地址       设备名称\033[0m"
+			echo -----------------------------------------------
+			echo -e "\033[31m输入有误，请重新输入！\033[0m"
+			add_ip
+		fi
+	}
+	del_all(){
+		echo -----------------------------------------------
+		if [ -z "$(cat ${CRASHDIR}/configs/mac ${CRASHDIR}/configs/ip_filter 2>/dev/null)" ];then
+			echo -e "\033[31m列表中没有需要移除的设备！\033[0m"
+			sleep 1
+		else
+			echo -e "请选择需要移除的设备：\033[36m"
+			echo -e "\033[33m      设备IP       设备mac地址       设备名称\033[0m"
 			i=1
-			for mac in $(cat ${CRASHDIR}/configs/mac); do
-				dev_ip=$(cat $dhcpdir | grep $mac | awk '{print $3}') && [ -z "$dev_ip" ] && dev_ip='000.000.00.00'
-				dev_mac=$(cat $dhcpdir | grep $mac | awk '{print $2}') && [ -z "$dev_mac" ] && dev_mac=$mac
-				dev_name=$(cat $dhcpdir | grep $mac | awk '{print $4}') && [ -z "$dev_name" ] && dev_name='未知设备'
+			for dev in $(cat ${CRASHDIR}/configs/mac ${CRASHDIR}/configs/ip_filter 2>/dev/null); do
+				get_devinfo
 				echo -e " $i \033[32m$dev_ip \033[36m$dev_mac \033[32m$dev_name\033[0m"
-				i=$((i+1))
+				i=$((i + 1))
 			done
 			echo -----------------------------------------------
 			echo -e "\033[0m 0 或回车 结束删除"
 			read -p "请输入需要移除的设备的对应序号 > " num
+			mac_filter_rows=$(cat ${CRASHDIR}/configs/mac 2>/dev/null | wc -l)
+			ip_filter_rows=$(cat ${CRASHDIR}/configs/ip_filter 2>/dev/null | wc -l)
 			if [ -z "$num" ]||[ "$num" -le 0 ]; then
 				n=
-			elif [ $num -le $(cat ${CRASHDIR}/configs/mac | wc -l) ];then
+			elif [ $num -le $mac_filter_rows ];then
 				sed -i "${num}d" ${CRASHDIR}/configs/mac
 				echo -----------------------------------------------
 				echo -e "\033[32m对应设备已移除！\033[0m"
-				del_mac
+				del_all
+			elif [ $num -le $((mac_filter_rows + ip_filter_rows)) ];then
+				num=$((num - mac_filter_rows))
+				sed -i "${num}d" ${CRASHDIR}/configs/ip_filter
+				echo -----------------------------------------------
+				echo -e "\033[32m对应设备已移除！\033[0m"
+				del_all
 			else
 				echo -----------------------------------------------
 				echo -e "\033[31m输入有误，请重新输入！\033[0m"
-				del_mac
+				del_all
 			fi
 		fi
 	}
@@ -913,46 +964,57 @@ macfilter(){ #局域网设备过滤
 	if [ -n "$(cat ${CRASHDIR}/configs/mac)" ]; then
 		echo -----------------------------------------------
 		echo -e "当前已过滤设备为：\033[36m"
-		echo -e "\033[33m   设备IP       设备mac地址       设备名称\033[0m"
-		for mac in $(cat ${CRASHDIR}/configs/mac); do
-			dev_ip=$(cat $dhcpdir | grep $mac | awk '{print $3}') && [ -z "$dev_ip" ] && dev_ip='000.000.00.00'
-			dev_mac=$(cat $dhcpdir | grep $mac | awk '{print $2}') && [ -z "$dev_mac" ] && dev_mac=$mac
-			dev_name=$(cat $dhcpdir | grep $mac | awk '{print $4}') && [ -z "$dev_name" ] && dev_name='未知设备'
-			echo -e "\033[32m$dev_ip \033[36m$dev_mac \033[32m$dev_name\033[0m"
+		echo -e "\033[33m 设备mac/ip地址       设备名称\033[0m"
+		for dev in $(cat ${CRASHDIR}/configs/mac 2>/dev/null); do
+			get_devinfo
+			echo -e "\033[36m$dev_mac \033[0m$dev_name"
+		done
+		for dev in $(cat ${CRASHDIR}/configs/ip_filter 2>/dev/null); do
+			get_devinfo
+			echo -e "\033[32m$dev_ip  \033[0m$dev_name"
 		done
 		echo -----------------------------------------------
 	fi
 	echo -e " 1 切换为\033[33m$macfilter_over模式\033[0m"
-	echo -e " 2 \033[32m添加指定设备\033[0m"
-	echo -e " 3 \033[36m移除指定设备\033[0m"
-	echo -e " 4 \033[31m清空整个列表\033[0m"
+	echo -e " 2 \033[32m添加指定设备(mac地址)\033[0m"
+	echo -e " 3 \033[32m添加指定设备(IP地址/网段)\033[0m"
+	echo -e " 4 \033[36m移除指定设备\033[0m"
+	echo -e " 9 \033[31m清空整个列表\033[0m"
 	echo -e " 0 返回上级菜单"
 	read -p "请输入对应数字 > " num
-	if [ -z "$num" ]; then
-		errornum
-	elif [ "$num" = 0 ]; then
-		i=
-	elif [ "$num" = 1 ]; then
+	case "$num" in
+	0)
+	;;
+	1)
 		macfilter_type=$macfilter_over
 		setconfig macfilter_type $macfilter_type
 		echo -----------------------------------------------
 		echo -e "\033[32m已切换为$macfilter_type模式！\033[0m"
 		macfilter
-	elif [ "$num" = 2 ]; then	
+	;;
+	2)
 		add_mac
 		macfilter
-	elif [ "$num" = 3 ]; then	
-		del_mac
+	;;
+	3)
+		add_ip
 		macfilter
-	elif [ "$num" = 4 ]; then
+	;;
+	4)
+		del_all
+		macfilter
+	;;
+	9)
 		:>${CRASHDIR}/configs/mac
+		:>${CRASHDIR}/configs/ip_filter
 		echo -----------------------------------------------
 		echo -e "\033[31m设备列表已清空！\033[0m"
 		macfilter
-	else
+	;;
+	*)
 		errornum
-		macfilter
-	fi
+	;;
+	esac
 }
 setboot(){ #启动相关设置
 	[ -z "$start_old" ] && start_old=未开启
@@ -1722,8 +1784,8 @@ uninstall(){
 tools(){
 	ssh_tools(){
 		stop_iptables(){
-			iptables -t nat -D PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 >/dev/null 2>&1
-			ip6tables -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 >/dev/null 2>&1
+			iptables -w -t nat -D PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 >/dev/null 2>&1
+			ip6tables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 >/dev/null 2>&1
 		}
 		[ -n "$(cat /etc/firewall.user 2>&1 | grep '启用外网访问SSH服务')" ] && ssh_ol=禁止 || ssh_ol=开启
 		[ -z "$ssh_port" ] && ssh_port=10022
@@ -1768,10 +1830,10 @@ tools(){
 				
 			elif [ "$num" = 3 ]; then	 
 				if [ "$ssh_ol" = "开启" ];then
-					iptables -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22
-					[ -n "$(ckcmd ip6tables)" ] && ip6tables -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22
-					echo "iptables -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 #启用外网访问SSH服务" >> /etc/firewall.user
-					[ -n "$(ckcmd ip6tables)" ] && echo "ip6tables -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 #启用外网访问SSH服务" >> /etc/firewall.user
+					iptables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22
+					[ -n "$(ckcmd ip6tables)" ] && ip6tables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22
+					echo "iptables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 #启用外网访问SSH服务" >> /etc/firewall.user
+					[ -n "$(ckcmd ip6tables)" ] && echo "ip6tables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 #启用外网访问SSH服务" >> /etc/firewall.user
 					echo -----------------------------------------------
 					echo -e "已开启外网访问SSH功能！"
 				else
@@ -1813,10 +1875,10 @@ tools(){
 		i=
 		
 	elif [ "$num" = 1 ]; then
-		source ${CRASHDIR}/update.sh && testcommand  
+		source ${CRASHDIR}/webget.sh && testcommand  
 		
 	elif [ "$num" = 2 ]; then
-		source ${CRASHDIR}/update.sh && userguide
+		source ${CRASHDIR}/webget.sh && userguide
 		
 	elif [ "$num" = 3 ]; then
 		log_pusher
@@ -1952,7 +2014,7 @@ main_menu(){
 		main_menu
     
 	elif [ "$num" = 6 ]; then
-		source ${CRASHDIR}/update.sh && set_core_config
+		source ${CRASHDIR}/webget.sh && set_core_config
 		main_menu
 		
 	elif [ "$num" = 7 ]; then
@@ -1970,7 +2032,7 @@ main_menu(){
 
 	elif [ "$num" = 9 ]; then
 		checkcfg=$(cat $CFG_PATH)
-		source ${CRASHDIR}/update.sh && update
+		source ${CRASHDIR}/webget.sh && update
 		if [ -n "$PID" ];then
 			checkcfg_new=$(cat $CFG_PATH)
 			[ "$checkcfg" != "$checkcfg_new" ] && checkrestart
