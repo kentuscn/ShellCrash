@@ -9,16 +9,14 @@ unified-delay: true
 external-controller: 127.0.0.1:9090
 dns:
   enable: true  # 是否启用dns false
-  prefer-h3: true
-  use-hosts: true
-  respect-rules: false
-  listen: 0.0.0.0:1053
   ipv6: false
+  listen: 0.0.0.0:1053
+  use-hosts: true
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
     - '*.lan'
-    - "+.local"
+    - "*.local"
     - localhost.ptlogin2.qq.com
   default-nameserver:
     - 223.5.5.5
