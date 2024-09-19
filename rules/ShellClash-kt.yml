@@ -9,45 +9,27 @@ unified-delay: true
 external-controller: 127.0.0.1:9090
 dns:
   enable: true  # 是否启用dns false
-  prefer-h3: true
-  use-hosts: true
-  use-system-hosts: true
-  respect-rules: false
   ipv6: false
   listen: 0.0.0.0:53
+  use-hosts: true
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
     - '*.lan'
     - "+.local"
     - localhost.ptlogin2.qq.com
- #默认DNS, 用于解析nameserver中的加密 dns 。此处必须为IP，可为加密 DNS
-  default-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
- #指定域名查询的解析服务器，可使用 geosite, 优先于 nameserver/fallback 查询
-  #nameserver-policy:
-    #'www.baidu.com': '114.114.114.114'
-    #'+.internal.crop.com': '10.0.0.1'
-    #'geosite:cn,private':
-    #- https://223.5.5.5/dns-query
-    #- https://223.6.6.6/dns-query
- #默认的域名服务器，如不配置 fallback/proxy-server-nameserver , 则所有域名都由 nameserver 解析
+ # 默认的域名服务器，如不配置 fallback/proxy-server-nameserver，则所有域名都由 nameserver 解析
   nameserver:
     - https://dns.alidns.com/dns-query
     - https://doh.pub/dns-query
- #代理节点域名解析服务器，仅用于解析代理节点的域名
-  proxy-server-nameserver:
-    - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
-  #后备域名解析服务器，一般情况下使用境外 DNS, 保证结果可信
+  # 解析墙外域名的，一般情况下使用境外 DNS，不能使用国内DNS
    fallback:
     - tls://1.0.0.1:853
     - tls://8.8.4.4:853
     - https://doh.opendns.com/dns-query
-    - https://1.1.1.1/dns-query
-    - https://8.8.8.8/dns-query
- #后备域名解析服务器筛选，满足条件的将使用 fallback结果或只使用 fallback解析
+    - https://doh.dns.sb/dns-query
+    - https://dns.cloudflare.com/dns-query
+ # 后备域名解析服务器筛选，满足条件的将使用 fallback结果或只使用 fallback解析
   fallback-filter:
     geoip: true
     geoip-code: CN
