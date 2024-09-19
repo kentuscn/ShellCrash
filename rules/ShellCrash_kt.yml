@@ -11,7 +11,6 @@ dns:
   enable: true  # 是否启用dns false
   prefer-h3: true
   use-hosts: true
-  use-system-hosts: true
   respect-rules: false
   listen: 0.0.0.0:1053
   ipv6: false
