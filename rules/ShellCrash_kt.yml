@@ -16,15 +16,12 @@ dns:
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
     - '*.lan'
-    - "*.local"
+    - "+.local"
     - localhost.ptlogin2.qq.com
-  default-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
   # 默认的域名服务器，如不配置 fallback/proxy-server-nameserver，则所有域名都由 nameserver 解析
   nameserver:
-    - https://doh.opendns.com/dns-query
-    - https://dns.cloudflare.com/dns-query
+    - 223.5.5.5
+    - 119.29.29.29
   # 解析墙外域名的，一般情况下使用境外 DNS
   fallback:
     - tls://1.0.0.1:853
