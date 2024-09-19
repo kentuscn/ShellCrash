@@ -25,9 +25,6 @@ dns:
   nameserver:
     - https://doh.opendns.com/dns-query
     - https://dns.cloudflare.com/dns-query
-  proxy-server-nameserver:
-    - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
   # 解析墙外域名的，一般情况下使用境外 DNS
   fallback:
     - tls://1.0.0.1:853
