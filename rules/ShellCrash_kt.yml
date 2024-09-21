@@ -39,7 +39,7 @@ dns:
     - localhost.ptlogin2.qq.com
 
  # 是否查询配置中的 hosts，默认 true
-  #use-hosts: true
+  use-hosts: true
 
  # 是否查询系统 hosts，默认 true
   # use-system-hosts: true
