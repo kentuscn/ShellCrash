@@ -44,11 +44,11 @@ dns:
     #- https://dns.cloudflare.com/dns-query         # 延迟大
     #- https://doh.dns.sb/dns-query                 # 延迟低 有丢包
     #- https://doh.opendns.com/dns-query            # 延迟大 丢包严重
-    - 2001:4860:4860::8888                 # Google IPv6
+    #- 2001:4860:4860::8888                 # Google IPv6
     #- 2001:4860:4860::8844                 # Google IPv6
     #- 2606:4700:4700::1111                 # Cloudflare IPv6
-    - 2606:4700:4700::1001                 # Cloudflare IPv6
-    - 2620:fe::10                          # IBM Quad9 IPv6
+    #- 2606:4700:4700::1001                 # Cloudflare IPv6
+    #- 2620:fe::10                          # IBM Quad9 IPv6
     #- 2620:fe::fe:10                       # IBM Quad9 IPv6
 # 后备域名解析服务器筛选，满足条件的将使用 fallback 结果或只使用 fallback 解析
   fallback-filter:
