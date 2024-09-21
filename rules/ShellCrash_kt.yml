@@ -36,10 +36,10 @@ dns:
 # 解析墙外域名的，一般情况下使用境外 DNS
   fallback:
     - tls://8.8.8.8:853
-    #- https://dns.google/dns-query
+    - https://8.8.4.4/dns-query
     - https://dns10.quad9.net/dns-query             # IBM DoH 无过滤 延迟140左右 无丢包
     - https://dns-unfiltered.adguard.com/dns-query  # AdGuard DoH 非过滤 延迟150左右 无丢包
-    #- tls://1.0.0.1:853                            # 延迟大
+    - tls://1.0.0.1:853                            # 延迟大
     #- https://dns11.quad9.net/dns-query            # IBM DoH ECS保护 延迟190左右 无丢包
     #- https://dns.cloudflare.com/dns-query         # 延迟大
     #- https://doh.dns.sb/dns-query                 # 延迟低 有丢包
