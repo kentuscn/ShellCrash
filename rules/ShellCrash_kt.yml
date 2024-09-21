@@ -1,7 +1,7 @@
 mixed-port: 7890  # 混合端口 HTTP和SOCKS5用一个端口
 allow-lan: true
 bind-address: "*"
-ipv6: false
+ipv6: true
 mode: rule
 # 设置日志输出级别 (默认级别：silent，即不输出任何内容，以避免因日志内容过大而导致程序内存溢出）。
 # 5 个级别：silent / error / warning / info / debug。级别越高日志输出量越大，越倾向于调试，若需要请自行开启。
@@ -15,7 +15,7 @@ dns:
   use-system-hosts: true
   respect-rules: false
   listen: 0.0.0.0:1053
-  ipv6: false
+  ipv6: true
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
@@ -29,9 +29,9 @@ dns:
     - https://223.5.5.5/dns-query    # 阿里 DOH
     #- 223.5.5.5                     # 阿里 IPv4
     #- 119.29.29.29                  # 腾讯 DNSPod
-    #- 2400:3200::1           # 阿里 IPv6
+    - 2400:3200::1           # 阿里 IPv6
     #- 2400:3200:baba::1      # 阿里 IPv6
-    #- 2402:4e00::            # 腾讯 DNSPod IPv6
+    - 2402:4e00::            # 腾讯 DNSPod IPv6
 # 解析墙外域名的，一般情况下使用境外 DNS
   fallback:
     - tls://8.8.8.8:853
@@ -43,11 +43,11 @@ dns:
     #- https://dns.cloudflare.com/dns-query         # 延迟大
     #- https://doh.dns.sb/dns-query                 # 延迟低 有丢包
     #- https://doh.opendns.com/dns-query            # 延迟大 丢包严重
-    #- 2001:4860:4860::8888                 # Google IPv6
+    - 2001:4860:4860::8888                 # Google IPv6
     #- 2001:4860:4860::8844                 # Google IPv6
     #- 2606:4700:4700::1111                 # Cloudflare IPv6
     #- 2606:4700:4700::1001                 # Cloudflare IPv6
-    #- 2620:fe::10                          # IBM Quad9 IPv6
+    - 2620:fe::10                          # IBM Quad9 IPv6
     #- 2620:fe::fe:10                       # IBM Quad9 IPv6
 # 后备域名解析服务器筛选，满足条件的将使用 fallback 结果或只使用 fallback 解析
   fallback-filter:
