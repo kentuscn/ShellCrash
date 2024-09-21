@@ -37,15 +37,12 @@ dns:
     - '*.lan'
     - "+.local"
     - localhost.ptlogin2.qq.com
-    
-# 是否查询配置中的 hosts，默认 true
-  use-hosts: true
+
+ # 是否查询配置中的 hosts，默认 true
+  #use-hosts: true
 
  # 是否查询系统 hosts，默认 true
   # use-system-hosts: true
-
- # dns 连接跟随 rules，需配置proxy-server-nameserver 
-  # respect-rules: false
   
  # 默认 DNS, 用于解析 nameserver 中的加密 dns 此处必须为 IP, 可为加密 DNS
   default-nameserver:
