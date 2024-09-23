@@ -1,37 +1,41 @@
 # 混合端口 HTTP和SOCKS5用一个端口
-mixed-port: 7890
+  mixed-port: 7890
 
 # HTTP 代理端口
-# port: 7890
+  # port: 7890
 
 # SOCKS5 代理端口
-socks-port: 7891
+  socks-port: 7891
 
 # Linux 和 macOS 的 redir 代理端口
-# redir-port: 7892
+  # redir-port: 7892
 
 # 允许局域网的连接（可用来共享代理）
-allow-lan: true
+  allow-lan: true
 
-bind-address: "*"
-ipv6: true
+  bind-address: "*"
+  ipv6: true
 
 # 规则模式：rule（规则） / global（全局代理）/ direct（全局直连）/ script (脚本)
-mode: rule
+  mode: rule
 
 # 5 个级别：silent / error / warning / info / debug。级别越高日志输出量越大
-log-level: info
+  log-level: info
 
 # 更换延迟计算方式，去除握手等额外延迟
-unified-delay: true
-external-controller: :9090
+  unified-delay: true
+  external-controller: :9090
 
 # DNS 服务配置
-dns:
-  enable: true     # 是否启用dns 启用 true 禁用false
-  ipv6: false
+  dns:
+
+# 是否启用dns 启用 true 禁用false
+  enable: true
+  ipv6: true
   listen: 0.0.0.0:1053
-  enhanced-mode: fake-ip  # 模式：redir-host或fake-ip
+
+# 模式：redir-host或fake-ip
+  enhanced-mode: redir-host
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
     - '*.lan'
@@ -39,18 +43,18 @@ dns:
     - localhost.ptlogin2.qq.com
 
  # 是否查询配置中的 hosts，默认 true
-  use-hosts: true
+   use-hosts: true
 
  # 是否查询系统 hosts，默认 true
-  # use-system-hosts: true
+   use-system-hosts: true
   
  # 默认 DNS, 用于解析 nameserver 中的加密 dns 此处必须为 IP, 可为加密 DNS
-  default-nameserver:
+   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
 
  # 默认的域名服务器，如不配置 fallback/proxy-server-nameserver，则所有域名都由 nameserver 解析
-  nameserver:
+   nameserver:
     - https://doh.pub/dns-query
     - https://dns.alidns.com/dns-query
     #- https://223.5.5.5/dns-query    # 阿里 DOH
@@ -59,7 +63,7 @@ dns:
     #- 223.5.5.5                     # 阿里 IPv4
     #- 119.29.29.29                  # 腾讯 DNSPod
  # 解析墙外域名的，一般情况下使用境外 DNS
-  fallback:
+   fallback:
     - tls://8.8.8.8:853
     - tls://1.0.0.1:853                              # 延迟大
     - https://doh.dns.sb/dns-query                   # 延迟低 有丢包
@@ -71,7 +75,7 @@ dns:
     #- https://doh.opendns.com/dns-query             # 延迟大 丢包严重
     
  # 后备域名解析服务器筛选，满足条件的将使用 fallback 结果或只使用 fallback 解析
-  fallback-filter:
+   fallback-filter:
   
   # 是否启用 fallback filter：  true or false
     geoip: true
