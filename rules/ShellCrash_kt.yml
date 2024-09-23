@@ -35,7 +35,7 @@ ipv6: true
 listen: 0.0.0.0:1053
 
 # 模式：redir-host或fake-ip
-enhanced-mode: redir-host
+enhanced-mode: fake-ip
 fake-ip-range: 198.18.0.1/16
 fake-ip-filter:
     - '*.lan'
