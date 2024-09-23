@@ -1,20 +1,19 @@
-# 混合端口 HTTP和SOCKS5用一个端口
-# mixed-port: 7890
-
-# HTTP 代理端口
+# HTTP(S) 代理端口
 port: 7890
 
 # SOCKS5 代理端口
 socks-port: 7891
 
+# HTTP(S) 和 SOCKS 代理混合端口
+# mixed-port: 7890
+
 # Linux 和 macOS 的 redir 代理端口
 # redir-port: 7892
 
-# 允许局域网的连接（可用来共享代理）
+# 是否允许局域网的连接（可用来共享代理）
 allow-lan: true
 
 bind-address: "*"
-ipv6: true
 
 # 规则模式：rule（规则） / global（全局代理）/ direct（全局直连）/ script (脚本)
 mode: rule
@@ -22,8 +21,13 @@ mode: rule
 # 5 个级别：silent / error / warning / info / debug。级别越高日志输出量越大
 log-level: info
 
+# 开启 IPv6 总开关，关闭阻断所有 IPv6 链接和屏蔽 DNS 请求 AAAA 记录
+ipv6: true
+
 # 更换延迟计算方式，去除握手等额外延迟
 unified-delay: true
+
+# RESTful API 监听地址
 external-controller: :9090
 
 # DNS 服务配置
