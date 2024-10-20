@@ -18,7 +18,7 @@ bind-address: "*"
 # 规则模式：rule（规则） / global（全局代理）/ direct（全局直连）/ script (脚本)
 mode: rule
 
-# 5 个级别：silent / error / warning / info / debug。级别越高日志输出量越大
+# 5 个级别：silent / error / warning / info / debug。从左至右级别依次递增，级别越高日志输出量越大
 log-level: info
 
 # 开启 IPv6 总开关，关闭阻断所有 IPv6 链接和屏蔽 DNS 请求 AAAA 记录
@@ -38,7 +38,7 @@ dns:
   use-system-hosts: true   # 是否查询系统 hosts，默认 true
   respect-rules: false
   listen: 0.0.0.0:1053
-  ipv6: false
+  #ipv6: false
 
  # 用于解析 nameserver，fallback 以及其他 DNS 服务器配置的，DNS 服务域名
  # 只能使用纯 IP 地址，可使用加密 DNS
