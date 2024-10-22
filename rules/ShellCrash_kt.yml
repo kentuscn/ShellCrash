@@ -38,13 +38,15 @@ dns:
   use-system-hosts: true   # 是否查询系统 hosts，默认 true
   respect-rules: false
   listen: 0.0.0.0:1053
-  #ipv6: false
+  ipv6: false
 
  # 用于解析 nameserver，fallback 以及其他 DNS 服务器配置的，DNS 服务域名
  # 只能使用纯 IP 地址，可使用加密 DNS
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
+    #-2400:3200::1  # 阿里 IPv6
+    #-2402:4e00::   # 腾讯 DNSPod IPv6
  # DNS 增强模式：可选值 normal / fake-ip / redir-host
  # 启用 fake-ip
   enhanced-mode: fake-ip
