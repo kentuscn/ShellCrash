@@ -21,8 +21,8 @@ mode: rule
 # 5 个级别：silent / error / warning / info / debug。从左至右级别依次递增，级别越高日志输出量越大
 log-level: info
 
-# 开启 IPv6 总开关，关闭阻断所有 IPv6 链接和屏蔽 DNS 请求 AAAA 记录
-ipv6: true
+# 开启 IPv6 总开关，（开启true）（关闭false） 关闭阻断所有 IPv6 链接和屏蔽 DNS 请求 AAAA 记录 
+ipv6: false
 
 # 更换延迟计算方式，去除握手等额外延迟
 unified-delay: true
