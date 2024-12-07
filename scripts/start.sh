@@ -58,7 +58,7 @@ setconfig() { #脚本配置工具
 ckcmd() { #检查命令是否存在
 	command -v sh >/dev/null 2>&1 && command -v "$1" >/dev/null 2>&1 || type "$1" >/dev/null 2>&1
 }
-ckgeo() {                                                  #查找及下载Geo数据文件
+ckgeo() { #查找及下载Geo数据文件
 	find --help 2>&1 | grep -q size && find_para=' -size +20' #find命令兼容
 	[ -z "$(find "$BINDIR"/"$1" "$find_para" 2>/dev/null)" ] && {
 		if [ -n "$(find "$CRASHDIR"/"$1" "$find_para" 2>/dev/null)" ]; then
@@ -384,8 +384,9 @@ dns:
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
 EOF
-		if [ "$dns_mod" = "fake-ip" ]; then
+		if [ "$dns_mod" != "redir_host" ]; then
 			cat "$CRASHDIR"/configs/fake_ip_filter "$CRASHDIR"/configs/fake_ip_filter.list 2>/dev/null | grep '\.' | sed "s/^/    - '/" | sed "s/$/'/" >>"$TMPDIR"/dns.yaml
+			[ "$dns_mod" = "mix" ] && echo '    - "geosite:CN"' >>"$TMPDIR"/dns.yaml
 		else
 			echo "    - '+.*'" >>"$TMPDIR"/dns.yaml #使用fake-ip模拟redir_host
 		fi
@@ -638,7 +639,7 @@ EOF
 }
 EOF
 		else
-			direct_dns="{ \"geosite\": \"geolocation-cn\", \"server\": \"dns_direct\" },"
+			direct_dns="{ \"geosite\": \"cn\", \"server\": \"dns_direct\" },"
 		fi
 	}
 	cat >"$TMPDIR"/jsons/dns.json <<EOF
@@ -751,7 +752,10 @@ EOF
       "type": "tun",
       "tag": "tun-in",
       "interface_name": "utun",
-      "inet4_address": "172.19.0.1/30",
+      "address": [
+        "172.72.0.1/30",
+        "fdfe:dcba:9876::1/126"
+      ],
       "auto_route": false,
       "stack": "system",
       "sniff": true,
@@ -960,6 +964,7 @@ start_ipt_route() { #iptables-route通用工具
 		#将所在链指定流量指向shellcrash表
 		$1 $w -t $2 -I $3 -p $5 $ports -j $4
 		[ "$dns_mod" != "redir_host" ] && [ "$common_ports" = "已开启" ] && [ "$1" = iptables ] && $1 $w -t $2 -I $3 -p $5 -d 198.18.0.0/16 -j $4
+		[ "$dns_mod" != "redir_host" ] && [ "$common_ports" = "已开启" ] && [ "$1" = ip6tables ] && $1 $w -t $2 -I $3 -p $5 -d fc00::/16 -j $4
 	}
 	[ "$5" = "tcp" -o "$5" = "all" ] && proxy_set $1 $2 $3 $4 tcp
 	[ "$5" = "udp" -o "$5" = "all" ] && proxy_set $1 $2 $3 $4 udp
@@ -1186,7 +1191,10 @@ start_nft_route() { #nftables-route通用工具
 	nft add rule inet shellcrash $1 tcp dport 53 return
 	nft add rule inet shellcrash $1 udp dport 53 return
 	#过滤常用端口
-	[ -n "$PORTS" ] && nft add rule inet shellcrash $1 tcp dport != {$PORTS} ip daddr != {198.18.0.0/16} return
+	[ -n "$PORTS" ] && {
+		nft add rule inet shellcrash $1 ip daddr != {198.18.0.0/16} tcp dport != {$PORTS} return
+		nft add rule inet shellcrash $1 ip6 daddr != {fc00::/16} tcp dport != {$PORTS} return
+	}
 	#防回环
 	nft add rule inet shellcrash $1 meta mark $routing_mark return
 	nft add rule inet shellcrash $1 meta skgid 7890 return
@@ -1495,14 +1503,20 @@ stop_firewall() { #还原防火墙配置
 		$ip6table -t nat -D PREROUTING -p udp --dport 53 -j shellcrashv6_dns 2>/dev/null
 		#redir
 		$ip6table -t nat -D PREROUTING -p tcp $ports -j shellcrashv6 2>/dev/null
+		$ip6table -t nat -D PREROUTING -p tcp -d fc00::/16 -j shellcrashv6 2>/dev/null
 		$ip6table -t nat -D OUTPUT -p tcp $ports -j shellcrashv6_out 2>/dev/null
+		$ip6table -t nat -D OUTPUT -p tcp -d fc00::/16 -j shellcrashv6_out 2>/dev/null
 		$ip6table -D INPUT -p tcp --dport 53 -j REJECT 2>/dev/null
 		$ip6table -D INPUT -p udp --dport 53 -j REJECT 2>/dev/null
 		#mark
 		$ip6table -t mangle -D PREROUTING -p tcp $ports -j shellcrashv6_mark 2>/dev/null
 		$ip6table -t mangle -D PREROUTING -p udp $ports -j shellcrashv6_mark 2>/dev/null
+		$ip6table -t mangle -D PREROUTING -p tcp -d fc00::/16 -j shellcrashv6_mark 2>/dev/null
+		$ip6table -t mangle -D PREROUTING -p udp -d fc00::/16 -j shellcrashv6_mark 2>/dev/null
 		$ip6table -t mangle -D OUTPUT -p tcp $ports -j shellcrashv6_mark_out 2>/dev/null
 		$ip6table -t mangle -D OUTPUT -p udp $ports -j shellcrashv6_mark_out 2>/dev/null
+		$ip6table -t mangle -D OUTPUT -p tcp -d fc00::/16 -j shellcrashv6_mark_out 2>/dev/null
+		$ip6table -t mangle -D OUTPUT -p udp -d fc00::/16 -j shellcrashv6_mark_out 2>/dev/null
 		$ip6table -D INPUT -p udp --dport 443 $set_cn_ip -j REJECT 2>/dev/null
 		$ip6table -t mangle -D PREROUTING -m mark --mark $fwmark -p tcp -j TPROXY --on-port $tproxy_port 2>/dev/null
 		$ip6table -t mangle -D PREROUTING -m mark --mark $fwmark -p udp -j TPROXY --on-port $tproxy_port 2>/dev/null
@@ -1657,7 +1671,7 @@ EOF
 	compare "$TMPDIR"/shellcrash_pac "$BINDIR"/ui/pac
 	[ "$?" = 0 ] && rm -rf "$TMPDIR"/shellcrash_pac || mv -f "$TMPDIR"/shellcrash_pac "$BINDIR"/ui/pac
 }
-core_check() {                                                                       #检查及下载内核文件
+core_check() { #检查及下载内核文件
 	[ -n "$(tar --help 2>&1 | grep -o 'no-same-owner')" ] && tar_para='--no-same-owner' #tar命令兼容
 	[ -n "$(find --help 2>&1 | grep -o size)" ] && find_para=' -size +2000'             #find命令兼容
 	tar_core() {
@@ -1747,7 +1761,7 @@ singbox_check() { #singbox启动前检查
 network_check() { #检查是否联网
 	for host in 223.5.5.5 114.114.114.114 1.2.4.8 dns.alidns.com doh.pub doh.360.cn; do
 		ping -c 3 $host >/dev/null 2>&1 && return 0
-		sleep 2
+		sleep 5
 	done
 	logger "当前设备无法连接网络，已停止启动！" 33
 	exit 1
@@ -1755,7 +1769,7 @@ network_check() { #检查是否联网
 bfstart() { #启动前
 	routing_mark=$((fwmark + 2))
 	#检测网络连接
-	[ ! -f "$TMPDIR"/crash_start_time ] && ckcmd ping && network_check
+	[ "$network_check" != "已禁用" ] && [ ! -f "$TMPDIR"/crash_start_time ] && ckcmd ping && network_check
 	[ ! -d "$BINDIR"/ui ] && mkdir -p "$BINDIR"/ui
 	[ -z "$crashcore" ] && crashcore=clash
 	#执行条件任务

@@ -558,10 +558,10 @@ setport() { #端口设置
 		setport
 	fi
 }
-setdns() { #DNS设置
+setdns() { #DNS详细设置
 	[ -z "$dns_nameserver" ] && dns_nameserver='114.114.114.114, 223.5.5.5'
 	[ -z "$dns_fallback" ] && dns_fallback='1.0.0.1, 8.8.4.4'
-	[ -z "$hosts_opt" ] && hosts_opt=已开启
+	[ -z "$hosts_opt" ] && hosts_opt=已启用
 	[ -z "$dns_redir" ] && dns_redir=未开启
 	[ -z "$dns_no" ] && dns_no=未禁用
 	echo -----------------------------------------------
@@ -1038,6 +1038,7 @@ setboot() { #启动相关设置
 	[ -z "$start_delay" -o "$start_delay" = 0 ] && delay=未设置 || delay=${start_delay}秒
 	[ "$autostart" = "enable" ] && auto_set="\033[33m禁止" || auto_set="\033[32m允许"
 	[ "${BINDIR}" = "${CRASHDIR}" ] && mini_clash=未开启 || mini_clash=已开启
+	[ -z "$network_check" ] && network_check=已开启
 	echo -----------------------------------------------
 	echo -e "\033[30;47m欢迎使用启动设置菜单：\033[0m"
 	echo -----------------------------------------------
@@ -1046,6 +1047,7 @@ setboot() { #启动相关设置
 	echo -e " 3 设置自启延时:	\033[36m$delay\033[0m	————用于解决自启后服务受限"
 	echo -e " 4 启用小闪存模式:	\033[36m$mini_clash\033[0m	————用于闪存空间不足的设备"
 	[ "${BINDIR}" != "${CRASHDIR}" ] && echo -e " 5 设置小闪存目录:	\033[36m${BINDIR}\033[0m"
+	echo -e " 6 自启网络检查:	\033[36m$network_check\033[0m	————禁用则跳过自启时网络检查"
 	echo -----------------------------------------------
 	echo -e " 0 \033[0m返回上级菜单\033[0m"
 	read -p "请输入对应数字 > " num
@@ -1174,6 +1176,22 @@ setboot() { #启动相关设置
 			;;
 		esac
 		setconfig BINDIR ${BINDIR} ${CRASHDIR}/configs/command.env
+		setboot
+		;;
+	6)
+		echo -e "\033[33m如果你的设备启动后可以正常使用，则无需变更设置！！\033[0m"
+		echo -e "\033[36m禁用时，如果使用了小闪存模式或者rule-set等在线规则，则可能会因无法联网而导致启动失败！\033[0m"
+		echo -e "\033[32m启用时，会导致部分性能较差或者拨号较慢的设备可能会因查询超时导致启动失败！\033[0m"
+		read -p "是否切换？(1/0) > " res
+		[ "$res" = '1' ] && {
+			if [ "$network_check" = "已禁用" ];then
+				network_check=已启用
+			else
+				network_check=已禁用
+			fi
+			setconfig network_check $network_check					
+		}
+		sleep 1
 		setboot
 		;;
 	*)
@@ -1412,19 +1430,18 @@ set_redir_mod() { #代理模式设置
 		;;
 	esac
 }
-set_dns_mod() { #DNS设置
+set_dns_mod() { #DNS模式设置
 	echo -----------------------------------------------
 	echo -e "当前DNS运行模式为：\033[47;30m $dns_mod \033[0m"
 	echo -e "\033[33m切换模式后需要手动重启服务以生效！\033[0m"
 	echo -----------------------------------------------
 	echo -e " 1 fake-ip模式：   \033[32m响应速度更快\033[0m"
 	echo -e "                   不支持绕过CN-IP功能"
-	if [ "$crashcore" = singbox -o "$crashcore" = singboxp ]; then
-		echo -e " 3 mix混合模式：   \033[32m内部realip外部fakeip\033[0m"
-		echo -e "                   依赖geosite-cn.(db/srs)数据库"
-	elif [ "$crashcore" = meta ]; then
+	if [ "$crashcore" = singbox ] || [ "$crashcore" = singboxp ] || [ "$crashcore" = meta ]; then
 		echo -e " 2 redir_host模式：\033[32m兼容性更好\033[0m"
 		echo -e "                   需搭配加密DNS使用"
+		echo -e " 3 mix混合模式：   \033[32m内部realip外部fakeip\033[0m"
+		echo -e "                   依赖geosite.dat/geosite-cn.srs数据库"
 	fi
 	echo -e " 4 \033[36mDNS进阶设置\033[0m"
 	echo " 0 返回上级菜单"
@@ -1444,7 +1461,7 @@ set_dns_mod() { #DNS设置
 		echo -e "\033[36m已设为 $dns_mod 模式！！\033[0m"
 		;;
 	3)
-		if [ "$crashcore" = singbox -o "$crashcore" = singboxp ]; then
+		if [ "$crashcore" = singbox ] || [ "$crashcore" = singboxp ] || [ "$crashcore" = meta ]; then
 			dns_mod=mix
 			setconfig dns_mod $dns_mod
 			echo -----------------------------------------------
