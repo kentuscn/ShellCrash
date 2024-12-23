@@ -1245,22 +1245,25 @@ switch_core(){ #clash与singbox内核切换
 	#singbox和clash内核切换时提示是否保留文件
 	[ "$core_new" != "$core_old" ] && {
 		[ "$dns_mod" = "redir_host" ] && [ "$core_old" = "clash" ] && setconfig dns_mod mix #singbox自动切换dns
-		[ "$dns_mod" = "mix" ] && [ "$core_old" = "singbox" ] && setconfig dns_mod fake-ip #singbox自动切换dns
+		[ "$dns_mod" = "mix" ] && [ "$crashcore" = 'clash' -o "$crashcore" = 'clashpre' ] && setconfig dns_mod fake-ip #singbox自动切换dns
 		echo -e "\033[33m已从$core_old内核切换至$core_new内核\033[0m"
 		echo -e "\033[33m二者Geo数据库及yaml/json配置文件不通用\033[0m"
 		read -p "是否保留相关数据库文件？(1/0) > " res
-		[ "$res" = '0' ] && [ "$core_old" = "clash" ] && {
-			 rm -rf ${CRASHDIR}/Country.mmdb
-			 rm -rf ${CRASHDIR}/GeoSite.dat
-			 setconfig Country_v
-			 setconfig cn_mini_v
-			 setconfig geosite_v
-		}
-		[ "$res" = '0' ] && [ "$core_old" = "singbox" ] && {
-			 rm -rf ${CRASHDIR}/geoip.db
-			 rm -rf ${CRASHDIR}/geosite.db
-			 setconfig geoip_cn_v
-			 setconfig geosite_cn_v
+		[ "$res" = '0' ] && {
+			[ "$core_old" = "clash" ] && {
+				geodate='Country.mmdb GeoSite.dat geosite-cn.mrs'
+				geodate_v='Country_v cn_mini_v geosite_v mrs_geosite_cn_v'
+			}
+			[ "$core_old" = "singbox" ] && {
+				geodate='geoip.db geosite.db geoip-cn.srs geosite-cn.srs'
+				geodate_v='geoip_cn_v geosite_cn_v srs_geoip_cn_v srs_geosite_cn_v'
+			}
+			for text in ${geodate} ;do
+				rm -rf ${CRASHDIR}/"$text"
+			done
+			for text in ${geodate_v} ;do
+				setconfig "$text"
+			done
 		}
 	}
 	if [ "$crashcore" = singbox -o "$crashcore" = singboxp ];then
@@ -1687,15 +1690,15 @@ setgeo(){ #数据库选择菜单
 		echo -e " 2 CN-IPV6绕过文件(约30kb)	\033[33m$china_ipv6_list_v\033[0m"
 	}
 	[ -z "$(echo "$crashcore" | grep sing)" ] && {
-		echo -e " 3 Clash全球版GeoIP数据库(约6mb)	\033[33m$Country_v\033[0m"
-		echo -e " 4 Clash精简版GeoIP_cn数据库(约0.1mb)	\033[33m$cn_mini_v\033[0m"
-		echo -e " 5 Meta完整版GeoSite数据库(约5mb)	\033[33m$geosite_v\033[0m"
+		echo -e " 3 Clash精简版GeoIP_cn数据库(约0.1mb)	\033[33m$cn_mini_v\033[0m"
+		echo -e " 4 Meta完整版GeoSite数据库(约5mb)	\033[33m$geosite_v\033[0m"
+		echo -e " 5 geosite-cn.mrs数据库(DNS分流,约0.5mb)	\033[33m$mrs_geosite_cn_v\033[0m"
 	}
 	[ -n "$(echo "$crashcore" | grep sing)" ] && {
 		echo -e " 6 SingBox精简版GeoIP_cn数据库(约0.3mb)	\033[33m$geoip_cn_v\033[0m"
 		echo -e " 7 SingBox精简版GeoSite数据库(约0.8mb)	\033[33m$geosite_cn_v\033[0m"
-		echo -e " 8 Rule_Set_geoip_cn数据库(约0.1mb)	\033[33m$srs_geoip_cn_v\033[0m"
-		echo -e " 9 Rule_Set_geosite_cn数据库(约0.1mb)	\033[33m$srs_geosite_cn_v\033[0m"
+		echo -e " 8 geoip-cn.srs数据库(约0.1mb)	\033[33m$srs_geoip_cn_v\033[0m"
+		echo -e " 9 geosite-cn.srs数据库(DNS分流,约0.5mb)	\033[33m$srs_geosite_cn_v\033[0m"
 	}
 	echo -----------------------------------------------
 	echo -e " a \033[32m自定义数据库文件\033[0m"
@@ -1719,20 +1722,20 @@ setgeo(){ #数据库选择菜单
 		setgeo
 	;;
 	3)
-		geotype=Country.mmdb
-		geoname=Country.mmdb
-		getgeo
-		setgeo
-	;;
-	4)
 		geotype=cn_mini.mmdb
 		geoname=Country.mmdb
 		getgeo
 		setgeo
 	;;
-	5)
+	4)
 		geotype=geosite.dat
 		geoname=GeoSite.dat
+		getgeo
+		setgeo
+	;;
+	5)
+		geotype=mrs_geosite_cn.mrs
+		geoname=geosite-cn.mrs
 		getgeo
 		setgeo
 	;;
@@ -1771,10 +1774,10 @@ setgeo(){ #数据库选择菜单
 		echo -----------------------------------------------
 		read -p "确认清理？[1/0] > " res
 		[ "$res" = '1' ] && {
-			for file in cn_ip.txt cn_ipv6.txt Country.mmdb GeoSite.dat geoip.db geosite.db ;do
+			for file in cn_ip.txt cn_ipv6.txt Country.mmdb GeoSite.dat geosite_cn.mrs geoip.db geosite.db geoip-cn.srs geosite-cn.srs;do
 				rm -rf $CRASHDIR/$file
 			done
-			for var in Country_v cn_mini_v china_ip_list_v china_ipv6_list_v geosite_v geoip_cn_v geosite_cn_v ;do
+			for var in Country_v cn_mini_v china_ip_list_v china_ipv6_list_v geosite_v geoip_cn_v geosite_cn_v mrs_geosite_cn_v srs_geoip_cn_v srs_geosite_cn_v ;do
 				setconfig $var
 			done
 			rm -rf $CRASHDIR/*.srs
@@ -2229,6 +2232,7 @@ userguide(){
 			#设置运行模式
 			redir_mod="Redir模式"
 			setconfig redir_mod "$redir_mod"
+			[ -n "$(echo $cputype | grep -E "linux.*mips.*")" ] && setconfig crashcore "clash"
 			#自动识别IPV6
 			[ -n "$(ip a 2>&1 | grep -w 'inet6' | grep -E 'global' | sed 's/.*inet6.//g' | sed 's/scope.*$//g')" ] && {
 				setconfig ipv6_redir 已开启
@@ -2252,7 +2256,7 @@ userguide(){
 			fi
 		elif [ "$num" = 2 ];then
 			setconfig redir_mod "Redir模式"
-			setconfig crashcore "clash"
+			[ -n "$(echo $cputype | grep -E "linux.*mips.*")" ] && setconfig crashcore "clash"
 			setconfig common_ports "未开启"
 			setconfig firewall_area '2'
 			
