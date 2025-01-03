@@ -442,7 +442,7 @@ EOF
 		cat >>"$TMPDIR"/hosts.yaml <<EOF
 hosts:
    'time.android.com': 203.107.6.88
-   'time.facebook.com': 203.107.6.88  
+   'time.facebook.com': 203.107.6.88
 EOF
 		#加载本机hosts
 		sys_hosts=/etc/hosts
@@ -601,14 +601,14 @@ EOF
 			hosts_domain=$(cat $sys_hosts | grep -E "^([0-9]{1,3}[\.]){3}" | awk '{printf "\"%s\", ", $2}' | sed 's/, $//')
 			cat >"$TMPDIR"/jsons/add_hosts.json <<EOF
 {
-  "dns": { 
+  "dns": {
 	"servers": [
 	  { "tag": "hosts_local", "address": "local", "detour": "DIRECT" }
 	],
     "rules": [
-	  { 
-	    "domain": [$hosts_domain], 
-		"server": "hosts_local" 
+	  {
+	    "domain": [$hosts_domain],
+		"server": "hosts_local"
 	  }
 	]
   }
@@ -666,7 +666,7 @@ EOF
 	}
 	cat >"$TMPDIR"/jsons/dns.json <<EOF
 {
-  "dns": { 
+  "dns": {
     "servers": [
 	  {
         "tag": "dns_proxy",
@@ -679,10 +679,10 @@ EOF
         "strategy": "$strategy",
         "address_resolver": "dns_resolver",
         "detour": "DIRECT"
-      }, 
-	  { "tag": "dns_fakeip", "address": "fakeip" }, 
-	  { "tag": "dns_resolver", "address": "223.5.5.5", "detour": "DIRECT" }, 
-	  { "tag": "block", "address": "rcode://success" }, 
+      },
+	  { "tag": "dns_fakeip", "address": "fakeip" },
+	  { "tag": "dns_resolver", "address": "223.5.5.5", "detour": "DIRECT" },
+	  { "tag": "block", "address": "rcode://success" },
 	  { "tag": "local", "address": "local", "detour": "DIRECT" }
 	],
     "rules": [
@@ -706,7 +706,7 @@ EOF
 	cat >"$TMPDIR"/jsons/add_route.json <<EOF
 {
   "route": {
-    "rules": [ 
+    "rules": [
 	{ "inbound": "dns-in", "outbound": "dns-out" }
 	],
 	"default_mark": $routing_mark
@@ -767,6 +767,7 @@ EOF
 }
 EOF
 	if [ "$redir_mod" = "混合模式" -o "$redir_mod" = "Tun模式" ]; then
+		[ "ipv6_redir" = '已开启' ] && ipv6_address='"fdfe:dcba:9876::1/126",'
 		cat >>"$TMPDIR"/jsons/tun.json <<EOF
 {
   "inbounds": [
@@ -775,8 +776,8 @@ EOF
       "tag": "tun-in",
       "interface_name": "utun",
       "address": [
-        "172.72.0.1/30",
-        "fdfe:dcba:9876::1/126"
+        $ipv6_address
+        "172.72.0.1/30"
       ],
       "auto_route": false,
       "stack": "system",
@@ -795,7 +796,7 @@ EOF
 	[ -n "$add_reject" -a -n "$add_dnsout" ] && add_reject="${add_reject},"
 	[ -n "$add_direct" -o -n "$add_reject" -o -n "$add_dnsout" ] && cat >"$TMPDIR"/jsons/add_outbounds.json <<EOF
 {
-  "outbounds": [ 
+  "outbounds": [
     $add_direct
 	$add_reject
 	$add_dnsout
@@ -1660,9 +1661,10 @@ makehtml() { #生成面板跳转文件
 		<h3>请在脚本更新功能中(9-4)安装<br>或者使用在线面板：</h3>
 		<h4>请复制当前地址/ui(不包括)前面的内容，填入url位置即可连接</h3>
         <a href="https://metacubexd.pages.dev" style="font-size: 24px;">Meta XD面板(推荐)<br></a>
+        <a href="https://board.zash.run.place" style="font-size: 24px;">zashboard面板<br></a>
         <a href="https://yacd.metacubex.one" style="font-size: 24px;">Meta YACD面板(推荐)<br></a>
         <a href="https://yacd.haishan.me" style="font-size: 24px;">Clash YACD面板<br></a>
-        <a style="font-size: 21px;"><br>如已安装，请刷新此页面！<br></a>		
+        <a style="font-size: 21px;"><br>如已安装，请使用Ctrl+F5强制刷新此页面！<br></a>
     </div>
 </body>
 </html
