@@ -22,7 +22,7 @@ mode: rule
 log-level: info
 
 # 开启 IPv6 总开关，（开启true）（关闭false） 关闭阻断所有 IPv6 链接和屏蔽 DNS 请求 AAAA 记录 
-ipv6: false
+ipv6: true
 
 # 更换延迟计算方式，去除握手等额外延迟
 unified-delay: true
@@ -38,7 +38,7 @@ dns:
   use-system-hosts: true   # 是否查询系统 hosts，默认 true
   respect-rules: false
   listen: 0.0.0.0:1053
-  ipv6: false
+  ipv6: true
 
  # 用于解析 nameserver，fallback 以及其他 DNS 服务器配置的，DNS 服务域名
  # 只能使用纯 IP 地址，可使用加密 DNS
