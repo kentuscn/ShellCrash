@@ -45,8 +45,8 @@ dns:
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
-    #-2400:3200::1  # 阿里 IPv6
-    #-2402:4e00::   # 腾讯 DNSPod IPv6
+    - 2400:3200::1  # 阿里 IPv6
+    - 2402:4e00::   # 腾讯 DNSPod IPv6
  # DNS 增强模式：可选值 normal / fake-ip / redir-host
  # 启用 fake-ip
   enhanced-mode: fake-ip
