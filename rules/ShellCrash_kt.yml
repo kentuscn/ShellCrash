@@ -33,20 +33,22 @@ external-controller: :9090
 # DNS 服务配置
 dns:
   enable: true      # 是否启用dns 启用 true 禁用false
-  prefer-h3: true   # 是否开启 DoH 支持 HTTP/3，将并发尝试
-  use-hosts: true   # 是否查询配置中的 hosts，默认 true
-  use-system-hosts: true   # 是否查询系统 hosts，默认 true
-  respect-rules: false
+  prefer-h3: true   # 使用 DoH 的 HTTP/3，提高解析速度
+  use-hosts: true   # 允许使用 hosts 解析，默认 true
+  use-system-hosts: true   # 是否使用系统 hosts，默认 true
+  respect-rules: trun  # 遵循 Clash 规则进行解析，防止 DNS 污染
   listen: 0.0.0.0:1053
   ipv6: true
 
- # 用于解析 nameserver，fallback 以及其他 DNS 服务器配置的，DNS 服务域名
+ # 用于解析 nameserver，fallback 以及其他 DNS 服务器配置的 DNS 域名
  # 只能使用纯 IP 地址，可使用加密 DNS
   default-nameserver:
-    - 223.5.5.5     # 阿里 IPv4
-    - 119.29.29.29  # 腾讯 DNSPod IPv4
-    #- 2400:3200::1  # 阿里 IPv6
+    - 223.5.5.5      # 阿里 IPv4
+    - 119.29.29.29   # 腾讯 DNSPod IPv4
+    #- 2400:3200::1        # 阿里 IPv6
     #- 2400:3200:baba::1   # 阿里 IPv6
+    #- 2402:4e00::         # 腾讯 IPv6
+    #- 2402:4e00:100::     # 腾讯 IPv6
  # DNS 增强模式：可选值 normal / fake-ip / redir-host
  # 启用 fake-ip
   enhanced-mode: fake-ip
@@ -54,29 +56,36 @@ dns:
  
  # fake ip 白名单列表，匹配到的将不适用 fake-ip
   fake-ip-filter:
-    - '*.lan'
-    - localhost.ptlogin2.qq.com
-    - "*.msftconnecttest.com"
+    - '*.lan'                    # 局域网设备（如路由器、打印机等）使用真实 IP
+    - '*.local'                  # 局域网设备，避免解析为假 IP
+    - localhost.ptlogin2.qq.com  # 腾讯 QQ 登录服务避免 fake-ip
+    - "*.msftconnecttest.com"    # Windows 网络检测服务避免 fake-ip
+    - "*.apple.com"              # Apple 相关服务避免 fake-ip，防止 iCloud 解析问题
+    - "*.windows.com"            # Windows 相关域名解析为真实 IP
+    
   
  # 默认的域名服务器，如不配置 fallback/proxy-server-nameserver，则所有域名都由 nameserver 解析
   nameserver:
-    - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
-    #- https://223.5.5.5/dns-query    # 阿里 DOH
-    #- https://1.12.12.12/dns-query   # 腾讯 DNSPod DOH
-    #- tls://223.6.6.6:853            # 阿里 DOT
+    - https://dns.alidns.com/dns-query   # 阿里 DOH
+    - https://doh.pub/dns-query          # 腾讯 DNSPod DOH
+    #- tls://dns.alidns.com              # 阿里 DOT
+    #- tls://dot.pub                     # 腾讯 DNSPod DOT
     #- 223.5.5.5                     # 阿里 IPv4
     #- 119.29.29.29                  # 腾讯 DNSPod
-    #- 2400:3200::1  # 阿里 IPv6
+    #- 2400:3200::1        # 阿里 IPv6
     #- 2400:3200:baba::1   # 阿里 IPv6
+    #- 2402:4e00::         # 腾讯 IPv6
+    #- 2402:4e00:100::     # 腾讯 IPv6
 
- # fallback 会查询 nameserver 中返回的 IP 是否为 CN，非必要配置
+ # fallback （用于解析境外网站）会查询 nameserver 中返回的 IP 是否为 CN，非必要配置
  # 当不是 CN，则使用 fallback 中的 DNS 解析
  # 解析墙外域名，推荐使用境外 DNS
   fallback:
+    - https://1.1.1.1/dns-query        # Cloudflare DoH
+    - https://8.8.8.8/dns-query        # Google DoH
+    - tls://1.0.0.1                    # Cloudflare DoT 延迟大
+    - tls://8.8.4.4                    # Google DoT
     - https://doh.dns.sb/dns-query                   # 延迟低 有丢包
-    - tls://8.8.8.8
-    - tls://1.0.0.1                                  # 延迟大
     #- 2001:4860:4860::8844                          # Google IPv6
     #- 2606:4700:4700::1111                          # Cloudflare IPv6
     #- https://dns10.quad9.net/dns-query             # IBM DoH 无过滤 延迟140左右 无丢包
@@ -91,12 +100,12 @@ dns:
      #- https://dns.alidns.com/dns-query
      #- https://doh.pub/dns-query
     
- # 满足条件的直接使用 fallback DNS解析
+ # fallback 过滤器（决定哪些请求用 fallback DNS解析
   fallback-filter:
-    geoip: true       # 是否启用 fallback filter
-    geoip-code: CN    # geoip 库中 CN 的 IP 不使用 fallback DNS解析
+    geoip: true       # 启用 GeoIP 规则
+    geoip-code: CN    # geoip 库中中国 IP 走 nameserver，非中国 IP 走 fallback
     geosite:          # 匹配到 geosite 库中的 gfw 的内容将只使用 fallback DNS解析
-      - gfw
+      - gfw           # 被墙的网站，直接用 fallback 解析
     ipcidr:           # 匹配到这些网段的 IP 直接使用 fallback DNS解析
       - 240.0.0.0/4
       - 0.0.0.0/32
@@ -107,3 +116,7 @@ dns:
       - '+.google.com'
       - '+.facebook.com'
       - '+.youtube.com'
+      - '+.x.com'
+      - '+.twitter.com'
+      - '+.instagram.com'
+      - '+.wikipedia.org'
