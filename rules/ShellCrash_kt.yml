@@ -81,8 +81,8 @@ dns:
  # 当不是 CN，则使用 fallback 中的 DNS 解析
  # 解析墙外域名，推荐使用境外 DNS
   fallback:
-    - https://1.1.1.1/dns-query        # Cloudflare DoH
-    - https://8.8.8.8/dns-query        # Google DoH
+    #- https://1.1.1.1/dns-query        # Cloudflare DoH
+    #- https://8.8.8.8/dns-query        # Google DoH
     - tls://1.0.0.1                    # Cloudflare DoT 延迟大
     - tls://8.8.4.4                    # Google DoT
     - https://doh.dns.sb/dns-query                   # 延迟低 有丢包
@@ -96,14 +96,14 @@ dns:
     #- https://doh.opendns.com/dns-query             # 延迟大 丢包严重
 
  # 专用于节点域名解析的 DNS 服务器，非必要配置项
-  proxy-server-nameserver:
-    - https://1.1.1.1/dns-query        # Cloudflare DoH
-    - https://8.8.8.8/dns-query        # Google DoH
-    - tls://1.0.0.1                    # Cloudflare DoT 延迟大
-    - tls://8.8.4.4                    # Google DoT
-    - https://doh.dns.sb/dns-query     # 延迟低 有丢包
-     #- https://dns.alidns.com/dns-query
-     #- https://doh.pub/dns-query
+  #proxy-server-nameserver:
+    #- https://1.1.1.1/dns-query        # Cloudflare DoH
+    #- https://8.8.8.8/dns-query        # Google DoH
+    #- tls://1.0.0.1                    # Cloudflare DoT 延迟大
+    #- tls://8.8.4.4                    # Google DoT
+    #- https://doh.dns.sb/dns-query     # 延迟低 有丢包
+    #- https://dns.alidns.com/dns-query
+    #- https://doh.pub/dns-query
      
     
  # fallback 过滤器（决定哪些请求用 fallback DNS解析
