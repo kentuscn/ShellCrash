@@ -1,21 +1,22 @@
 #DustinWin-ruleset全分组规则
 proxy-groups:
-  - {name: 🚀 节点选择, type: select, proxies: [🇭🇰 香港节点, 🇹🇼 台湾节点, 🇯🇵 日本节点, 🇸🇬 新加坡节点, 🇺🇸 美国节点, 👍 高级节点, 📺 省流节点, {providers_tags}, 🎯 全球直连]}
-  - {name: 🐟 漏网之鱼, type: select, proxies: [🚀 节点选择, 🇭🇰 香港节点, 🇹🇼 台湾节点, 🇯🇵 日本节点, 🇸🇬 新加坡节点, 🇺🇸 美国节点, 👍 高级节点, 📺 省流节点, {providers_tags}, 🎯 全球直连]}
-  - {name: 📈 网络测试, type: select, proxies: [🎯 全球直连, 🇭🇰 香港节点, 🇹🇼 台湾节点, 🇯🇵 日本节点, 🇸🇬 新加坡节点, 🇺🇸 美国节点, 👍 高级节点, {providers_tags}]}
+  - {name: 🚀 节点选择, type: select, proxies: [🇭🇰 香港节点, 🇹🇼 台湾节点, 🇯🇵 日本节点, 🇸🇬 新加坡节点, 🇺🇸 美国节点, 👑 高级节点, 📉 省流节点, {providers_tags}]}
+  - {name: 📈 网络测试, type: select, proxies: [🎯 全球直连, 🇭🇰 香港节点, 🇹🇼 台湾节点, 🇯🇵 日本节点, 🇸🇬 新加坡节点, 🇺🇸 美国节点, 👑 高级节点, {providers_tags}]}
   - {name: 🤖 人工智能, type: select, proxies: [🚀 节点选择, 🇭🇰 香港节点, 🇹🇼 台湾节点, 🇯🇵 日本节点, 🇸🇬 新加坡节点, 🇺🇸 美国节点]}
-  - {name: 🎮 游戏服务, type: select, proxies: [🎯 全球直连, 👍 高级节点, 🚀 节点选择]}
+  - {name: 📋 Trackerslist, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
+  - {name: 🎮 游戏服务, type: select, proxies: [🎯 全球直连, 👑 高级节点, 🚀 节点选择]}
   - {name: 🪟 微软服务, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
   - {name: 🇬 谷歌服务, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
   - {name: 🍎 苹果服务, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
-  - {name: 🇨🇳 直连域名, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
-  - {name: 🇨🇳 直连 IP, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
+  - {name: 🛡️ 直连域名, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
+  - {name: 🀄️ 直连 IP, type: select, proxies: [🎯 全球直连, 🚀 节点选择]}
   - {name: 🧱 代理域名, type: select, proxies: [🚀 节点选择, 🎯 全球直连]}
   - {name: 📲 电报消息, type: select, proxies: [🚀 节点选择, 🇭🇰 香港节点, 🇹🇼 台湾节点, 🇯🇵 日本节点, 🇸🇬 新加坡节点, 🇺🇸 美国节点, {providers_tags}]}
-  - {name: 🔒 私有网络, type: select, proxies: [🎯 全球直连]}
+  - {name: 🐟 漏网之鱼, type: select, proxies: [🚀 节点选择, 🇭🇰 香港节点, 🇹🇼 台湾节点, 🇯🇵 日本节点, 🇸🇬 新加坡节点, 🇺🇸 美国节点, 👑 高级节点, 📉 省流节点, {providers_tags}, 🎯 全球直连]}
   - {name: 🎯 全球直连, type: select, proxies: [DIRECT]}
-  - {name: 👍 高级节点, type: url-test, tolerance: 100, lazy: true, include-all-providers: true, filter: "(?i)(专线|专用|高级|直连|急速|高倍率|游戏|game|IEPL|IPLC|AIA|CTM|CC|AC)"}
-  - {name: 📺 省流节点, type: url-test, tolerance: 100, lazy: true, include-all-providers: true, filter: "(0.[1-5]|低倍率|省流|大流量)"}
+
+  - {name: 👑 高级节点, type: url-test, tolerance: 100, lazy: true, include-all-providers: true, filter: "(?i)(专线|专用|高级|直连|急速|高倍率|游戏|game|IEPL|IPLC|AIA|CTM|CC|AC)"}
+  - {name: 📉 省流节点, type: url-test, tolerance: 100, lazy: true, include-all-providers: true, filter: "(0.[1-5]|低倍率|省流|大流量)"}
   - {name: 🇭🇰 香港节点, type: url-test, tolerance: 100, lazy: true, include-all-providers: true, filter: "(?i)(🇭🇰|港|hk|hongkong|hong kong)"}
   - {name: 🇹🇼 台湾节点, type: url-test, tolerance: 100, lazy: true, include-all-providers: true, filter: "(?i)(🇹🇼|台|tw|taiwan|tai wan)"}
   - {name: 🇯🇵 日本节点, type: url-test, tolerance: 100, lazy: true, include-all-providers: true, filter: "(?i)(🇯🇵|日|jp|japan)"}
@@ -29,6 +30,14 @@ rule-providers:
     format: mrs
     path: ./rules/private.mrs
     url: "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/private.mrs"
+    interval: 86400
+
+  trackerslist:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rules/trackerslist.mrs
+    url: "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/trackerslist.mrs"
     interval: 86400
 
   microsoft-cn:
@@ -103,14 +112,6 @@ rule-providers:
     url: "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cn.mrs"
     interval: 86400
 
-  telegramip:
-    type: http
-    behavior: ipcidr
-    format: mrs
-    path: ./rules/telegramip.mrs
-    url: "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/telegramip.mrs"
-    interval: 86400
-
   privateip:
     type: http
     behavior: ipcidr
@@ -127,8 +128,17 @@ rule-providers:
     url: "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/cnip.mrs"
     interval: 86400
 
+  telegramip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    path: ./rules/telegramip.mrs
+    url: "https://github.com/DustinWin/ruleset_geodata/releases/download/mihomo-ruleset/telegramip.mrs"
+    interval: 86400
+
 rules:
-  - RULE-SET,private,🔒 私有网络
+  - RULE-SET,private,🎯 全球直连
+  - RULE-SET,trackerslist,📋 Trackerslist
   - RULE-SET,microsoft-cn,🪟 微软服务
   - RULE-SET,apple-cn,🍎 苹果服务
   - RULE-SET,google-cn,🇬 谷歌服务
@@ -136,9 +146,9 @@ rules:
   - RULE-SET,ai,🤖 人工智能
   - RULE-SET,networktest,📈 网络测试
   - RULE-SET,proxy,🧱 代理域名
-  - RULE-SET,tld-cn,🇨🇳 直连域名
-  - RULE-SET,cn,🇨🇳 直连域名
+  - RULE-SET,tld-cn,🛡️ 直连域名
+  - RULE-SET,cn,🛡️ 直连域名
+  - RULE-SET,privateip,🎯 全球直连,no-resolve
+  - RULE-SET,cnip,🀄️ 直连 IP
   - RULE-SET,telegramip,📲 电报消息,no-resolve
-  - RULE-SET,privateip,🔒 私有网络,no-resolve
-  - RULE-SET,cnip,🇨🇳 直连 IP
   - MATCH,🐟 漏网之鱼
