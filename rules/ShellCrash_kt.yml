@@ -52,7 +52,7 @@ dns:
  # DNS 增强模式：可选值 normal / fake-ip / redir-host
  # 启用 fake-ip
   enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.0/15
+  fake-ip-range: 198.18.0.0/16
  
  # fake ip 白名单列表，匹配到的将不适用 fake-ip
   fake-ip-filter:
