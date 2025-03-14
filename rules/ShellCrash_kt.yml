@@ -64,8 +64,8 @@ dns:
  
  # fake ip 白名单列表，匹配到的将返回真实 IP
   fake-ip-filter:
-    - '*.lan'                      # 局域网设备（如路由器、打印机等）使用真实 IP
-    - '*.local'                    # 局域网设备，避免解析为假 IP
+    - "*.lan"                      # 局域网设备（如路由器、打印机等）使用真实 IP
+    - "*.local"                    # 局域网设备，避免解析为假 IP
     - "localhost.ptlogin2.qq.com"  # 腾讯 QQ 登录服务避免 fake-ip
     - "*.msftconnecttest.com"      # Windows 网络检测服务避免 fake-ip
     - "*.apple.com"                # Apple 相关服务避免 fake-ip，防止 iCloud 解析问题
@@ -75,12 +75,12 @@ dns:
   nameserver-policy:
   
   # 明确标记为国内的域名，用下面的 DNS 解析
-    'rule-set:cn':
+    "rule-set:cn":
     - https://dns.alidns.com/dns-query  # 阿里 DOH
     - https://doh.pub/dns-query         # 腾讯 DNSPod DOH
   
   # 明确标记为国外的域名，用下面的 DNS 解析
-    'rule-set:!cn':
+    "rule-set:!cn":
     - https://cloudflare-dns.com/dns-query   # Cloudflare DoH 域名
     - https://doh.opendns.com/dns-query      # Opendns DOH
   
