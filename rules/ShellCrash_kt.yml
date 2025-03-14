@@ -129,7 +129,12 @@ dns:
  # 用于direct出口域名解析的 DNS 服务器
  # 如果不填则遵循 nameserver-policy、nameserver 和 fallback 的配置
   direct-nameserver:
-    - system
+    - 223.5.5.5      # 阿里 IPv4
+    - 119.29.29.29   # 腾讯 DNSPod IPv4
+    #- 2400:3200::1        # 阿里 IPv6
+    #- 2400:3200:baba::1   # 阿里 IPv6
+    #- 2402:4e00::         # 腾讯 IPv6
+    #- 2402:4e00:100::     # 腾讯 IPv6
   
 # 是否遵循nameserver-policy，默认为不遵守，仅当direct-nameserver不为空时生效
   direct-nameserver-follow-policy: false
