@@ -37,7 +37,7 @@ dns:
   prefer-h3: true   # 使用 DoH 的 HTTP/3，提高解析速度
   use-hosts: true   # 允许使用 hosts 解析，默认 true
   use-system-hosts: true   # 是否使用系统 hosts，默认 true
-  respect-rules: false     # 遵循 Clash 规则进行解析，防止 DNS 污染，启用 true 禁用false
+  respect-rules: true      # 遵循 Clash 规则进行解析，防止 DNS 污染，启用 true 禁用false
   listen: 0.0.0.0:1053
   ipv6: true
 
