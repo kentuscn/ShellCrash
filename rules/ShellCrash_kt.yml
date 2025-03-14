@@ -71,11 +71,23 @@ dns:
     - "*.apple.com"                # Apple 相关服务避免 fake-ip，防止 iCloud 解析问题
     - "*.windows.com"              # Windows 相关域名解析为真实 IP  
 
- # 指定域名查询的解析服务器，可使用 geosite, 优先于 nameserver/fallback 查询
+ # 指定域名查询的解析服务器，可使用 geosite 或'rule-set:cn': 优先于 nameserver/fallback 查询
   nameserver-policy:
-    'rule-set:cn':
-    - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
+  
+  # 明确标记为国内的域名，用下面的 DNS 解析
+    "geosite:cn":
+    - https://dns.alidns.com/dns-query  # 阿里 DOH
+    - https://doh.pub/dns-query         # 腾讯 DNSPod DOH
+  
+  # 明确标记为国外的域名，用下面的 DNS 解析
+    "geosite:geolocation-!cn":
+    - https://cloudflare-dns.com/dns-query   # Cloudflare DoH 域名
+    - https://doh.opendns.com/dns-query      # Opendns DOH
+  
+  # 未匹配的域名，用下面的 DNS 解析
+    "*":
+    - https://cloudflare-dns.com/dns-query   # Cloudflare DoH 域名
+    - https://doh.opendns.com/dns-query      # Opendns DOH
   
  # 默认的域名服务器，如不配置 fallback/proxy-server-nameserver，则所有域名都由 nameserver 解析
   nameserver:
