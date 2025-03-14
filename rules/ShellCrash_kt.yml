@@ -74,13 +74,13 @@ dns:
  # 指定域名查询的解析服务器，可使用 geosite 或'rule-set:cn': 优先于 nameserver/fallback 查询
   nameserver-policy:
   
-  # 明确标记为国内的域名，用下面的 DNS 解析
-    "rule-set:cn":
+  # 明确标记为 CN 的域名，用下面的 DNS 解析
+    "geosite:cn":
     - https://dns.alidns.com/dns-query  # 阿里 DOH
     - https://doh.pub/dns-query         # 腾讯 DNSPod DOH
   
-  # 明确标记为国外的域名，用下面的 DNS 解析
-    "rule-set:!cn":
+  # 明确标记为 非CN 的域名，用下面的 DNS 解析
+    "geosite:!cn":
     - https://cloudflare-dns.com/dns-query   # Cloudflare DoH 域名
     - https://doh.opendns.com/dns-query      # Opendns DOH
   
