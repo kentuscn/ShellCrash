@@ -86,12 +86,12 @@ dns:
   
  # 默认的域名服务器，如不配置 fallback/proxy-server-nameserver，则所有域名都由 nameserver 解析
   nameserver:
-    - https://dns.alidns.com/dns-query   # 阿里 DOH
+    #- https://dns.alidns.com/dns-query   # 阿里 DOH
     #- https://doh.pub/dns-query         # 腾讯 DNSPod DOH
     #- tls://dns.alidns.com              # 阿里 DOT
-    - tls://dot.pub:853                  # 腾讯 DNSPod DOT
-    #- 223.5.5.5                     # 阿里 IPv4
-    #- 119.29.29.29                  # 腾讯 DNSPod
+    #- tls://dot.pub:853                  # 腾讯 DNSPod DOT
+    - 223.5.5.5                     # 阿里 IPv4
+    - 119.29.29.29                  # 腾讯 DNSPod
     #- 2400:3200::1        # 阿里 IPv6
     #- 2400:3200:baba::1   # 阿里 IPv6
     #- 2402:4e00::         # 腾讯 IPv6
