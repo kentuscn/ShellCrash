@@ -66,7 +66,7 @@ dns:
   fake-ip-filter:
     #- "+.*"                       # [不推荐] 回退所有域名，即所有域名都不使用 fake-ip，而是返回真实 IP。相当于回退到 redir-host 模式。
     - "*.lan"                      # 局域网设备（如路由器、打印机等）使用真实 IP
-    - "*.local"                    # 局域网设备，避免解析为假 IP
+    #- "*.local"                    # 局域网设备，避免解析为假 IP
     - "localhost.ptlogin2.qq.com"  # 腾讯 QQ 登录服务避免 fake-ip
     - "*.msftconnecttest.com"      # Windows 网络检测服务避免 fake-ip
     - "*.apple.com"                # Apple 相关服务避免 fake-ip，防止 iCloud 解析问题
