@@ -92,8 +92,8 @@ jobs:
         echo 解压缩zashboard
         unzip -o zashboard.zip > /dev/null
         cd dist
-        echo 删除字体文件
-        find -name '*.ttf' | xargs  rm -rf
+        echo 添加CNAME文件
+        echo 'board.zash.run.place' > CNAME
         tar -zcvf zashboard.tar.gz * > /dev/null
         mv -f zashboard.tar.gz ../
 
