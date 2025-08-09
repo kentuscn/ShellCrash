@@ -54,7 +54,7 @@ dns:
  # DNS 处理模式：可选值 normal / fake-ip / redir-host
  # 启用 fake-ip
   enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
+  fake-ip-range: 28.0.0.1/8
   
  # fake ip 筛选模式
  # 可选 blacklist/whitelist
