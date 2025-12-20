@@ -16,8 +16,8 @@ getconfig() { #读取配置及全局变量
     #加载配置文件
     . "$CRASHDIR"/configs/ShellCrash.cfg >/dev/null
     #缺省值
-    [ -z "$redir_mod" ] && [ "$USER" = "root" -o "$USER" = "admin" ] && redir_mod=Redir模式
-    [ -z "$redir_mod" ] && redir_mod=纯净模式
+    [ -z "$redir_mod" ] && [ "$USER" = "root" -o "$USER" = "admin" ] && redir_mod='Redir模式'
+    [ -z "$redir_mod" ] && firewall_area='4'
     [ -z "$skip_cert" ] && skip_cert=已开启
     [ -z "$dns_mod" ] && dns_mod=fake-ip
     [ -z "$ipv6_redir" ] && ipv6_redir=未开启
@@ -295,7 +295,7 @@ urlencode() {
     | hexdump -v -e '/1 "%02X\n"' \
     | while read -r hex; do
         case "$hex" in
-            2D|2E|5F|7E|3[0-9]|4[1-9A-F]|5[A-F]|6[1-9A-F]|7[0-9A-E])
+                2D|2E|5F|7E|3[0-9]|4[1-9A-F]|5[0-9A]|6[1-9A-F]|7[0-9A-E])
                 printf "\\$(printf '%03o' "0x$hex")"
                 ;;
             *)
@@ -391,6 +391,7 @@ get_core_config() { #下载内核配置文件
     if [ -z "$Https" ]; then
         #Urlencord转码处理保留字符
         if ckcmd hexdump;then
+			Url=$(echo $Url | sed 's/%26/\&/g')   #处理分隔符
 			urlencodeUrl="exclude=$(urlencode "$exclude")&include=$(urlencode "$include")&url=$(urlencode "$Url")&config=$(urlencode "$Config")"
 		else
 			urlencodeUrl="exclude=$exclude&include=$include&url=$Url&config=$Config"
@@ -558,7 +559,7 @@ EOF
         fi
     fi
     #分割配置文件
-    yaml_char='proxies proxy-groups proxy-providers rules rule-providers'
+    yaml_char='proxies proxy-groups proxy-providers rules rule-providers sub-rules listeners'
     for char in $yaml_char; do
         sed -n "/^$char:/,/^[a-z]/ { /^[a-z]/d; p; }" $core_config >"$TMPDIR"/${char}.yaml
     done
@@ -570,10 +571,10 @@ EOF
     sed -i "/#自定义策略组/d" "$TMPDIR"/proxy-groups.yaml
     [ -n "$(grep -Ev '^#' "$CRASHDIR"/yamls/proxy-groups.yaml 2>/dev/null)" ] && {
         #获取空格数
-        space_name=$(grep -aE '^ *- name: ' "$TMPDIR"/proxy-groups.yaml | head -n 1 | grep -oE '^ *')
-        space_proxy=$(grep -A 1 'proxies:$' "$TMPDIR"/proxy-groups.yaml | grep -aE '^ *- ' | head -n 1 | grep -oE '^ *')
+        space_name=$(grep -aE '^ *- \{?name: ' "$TMPDIR"/proxy-groups.yaml | head -n 1 | grep -oE '^ *')
+        space_proxy="$space_name    "
         #合并自定义策略组到proxy-groups.yaml
-        cat "$CRASHDIR"/yamls/proxy-groups.yaml | sed "/^#/d" | sed "s/#.*//g" | sed '1i\ #自定义策略组开始' | sed '$a\ #自定义策略组结束' | sed "s/^ */${space_name}  /g" | sed "s/^ *- /${space_proxy}- /g" | sed "s/^ *- name: /${space_name}- name: /g" >"$TMPDIR"/proxy-groups_add.yaml
+        cat "$CRASHDIR"/yamls/proxy-groups.yaml | sed "/^#/d" | sed "s/#.*//g" | sed '1i\ #自定义策略组开始' | sed '$a\ #自定义策略组结束' | sed "s/^ */${space_name}  /g" | sed "s/^ *- /${space_proxy}- /g" | sed "s/^ *- name: /${space_name}- name: /g"  | sed "s/^ *- {name: /${space_name}- {name: /g" >"$TMPDIR"/proxy-groups_add.yaml
         cat "$TMPDIR"/proxy-groups.yaml >>"$TMPDIR"/proxy-groups_add.yaml
         mv -f "$TMPDIR"/proxy-groups_add.yaml "$TMPDIR"/proxy-groups.yaml
         oldIFS="$IFS"
@@ -830,10 +831,8 @@ EOF
 	"default_domain_resolver": "dns_resolver",
     "default_mark": $routing_mark,
 	"rules": [
-	  { "inbound": [ "dns-in" ], "action": "sniff", "timeout": "500ms" },
+	  { "inbound": [ "dns-in" ], "action": "hijack-dns" },
 	  $sniffer_set
-      { "protocol": "dns", "action": "hijack-dns" },
-	  { "inbound": [ "dns-in" ], "action": "reject" },
       { "clash_mode": "Direct" , "outbound": "DIRECT" },
       { "clash_mode": "Global" , "outbound": "GLOBAL" }
 	]
@@ -1461,10 +1460,10 @@ start_nft_wan() { #nftables公网防火墙
 }
 start_nftables() { #nftables配置总入口
     #初始化nftables
-    nft add table inet shellcrash
-    nft flush table inet shellcrash
+    nft add table inet shellcrash 2>/dev/null
+    nft flush table inet shellcrash 2>/dev/null
     #公网访问防火墙
-    start_nft_wan
+    [ "$systype" != 'container' ] && start_nft_wan
     #启动DNS劫持
     [ "$dns_no" != "已禁用" -a "$dns_redir" != "已开启" -a "$firewall_area" -le 3 ] && {
         [ "$lan_proxy" = true ] && start_nft_dns prerouting prerouting #局域网dns转发
@@ -1704,7 +1703,7 @@ stop_firewall() { #还原防火墙配置
     #还原防火墙文件
     [ -s /etc/init.d/firewall.bak ] && mv -f /etc/init.d/firewall.bak /etc/init.d/firewall
     #others
-    sed -i '/shellcrash-dns-repair/d' /etc/resolv.conf
+    [ "$systype" != 'container' ] && sed -i '/shellcrash-dns-repair/d' /etc/resolv.conf >/dev/null 2>&1
 }
 #启动相关
 web_save() { #最小化保存面板节点选择
@@ -2043,20 +2042,6 @@ hotupdate() { #热更新订阅
         put_save http://127.0.0.1:${db_port}/configs "{\"path\":\""$CRASHDIR"/config.$format\"}"
     rm -rf "$TMPDIR"/CrashCore
 }
-set_proxy() { #设置环境变量
-    if [ "$local_type" = "环境变量" ]; then
-        [ -w ~/.bashrc ] && profile=~/.bashrc
-        [ -w /etc/profile ] && profile=/etc/profile
-        echo 'export all_proxy=http://127.0.0.1:'"$mix_port" >>$profile
-        echo 'export ALL_PROXY=$all_proxy' >>$profile
-    fi
-}
-unset_proxy() { #卸载环境变量
-    [ -w ~/.bashrc ] && profile=~/.bashrc
-    [ -w /etc/profile ] && profile=/etc/profile
-    sed -i '/all_proxy/'d $profile
-    sed -i '/ALL_PROXY/'d $profile
-}
 
 getconfig #读取配置及全局变量
 
@@ -2066,7 +2051,7 @@ start)
     [ -n "$(pidof CrashCore)" ] && $0 stop #禁止多实例
     stop_firewall                          #清理路由策略
     #使用不同方式启动服务
-    if [ "$firewall_area" = "5" ]; then #主旁转发
+	if [ "$firewall_area" = "5" ]; then #主旁转发
         start_firewall
     elif [ "$start_old" = "已开启" ]; then
         bfstart && start_old
@@ -2079,14 +2064,16 @@ start)
             systemctl daemon-reload
             systemctl start shellcrash.service || start_error
         }
+    elif grep -q 's6' /proc/1/comm; then
+		bfstart && /command/s6-svc -u /run/service/shellcrash && {
+			[ ! -f "$CRASHDIR"/.dis_startup ] && touch /etc/s6-overlay/s6-rc.d/user/contents.d/afstart
+			afstart &
+		}
     elif rc-status -r >/dev/null 2>&1; then
         rc-service shellcrash stop >/dev/null 2>&1
         rc-service shellcrash start
     else
         bfstart && start_old
-    fi
-    if [ "$2" = "infinity" ]; then #增加容器自启方式，请将CMD设置为"$CRASHDIR"/start.sh start infinity
-        sleep infinity
     fi
     ;;
 stop)
@@ -2102,11 +2089,13 @@ stop)
         systemctl stop shellcrash.service >/dev/null 2>&1
     elif [ -f /etc/rc.common -a "$(cat /proc/1/comm)" = "procd" ]; then
         /etc/init.d/shellcrash stop >/dev/null 2>&1
+    elif grep -q 's6' /proc/1/comm; then
+		/command/s6-svc -d /run/service/shellcrash
+		stop_firewall
     elif rc-status -r >/dev/null 2>&1; then
         rc-service shellcrash stop >/dev/null 2>&1
     else
         stop_firewall #清理路由策略
-        unset_proxy   #禁用本机代理
     fi
     PID=$(pidof CrashCore) && [ -n "$PID" ] && kill -9 $PID >/dev/null 2>&1
     #清理缓存目录
@@ -2159,12 +2148,11 @@ init)
             profile=$(cat /etc/profile | grep -oE '\-f.*jffs.*profile' | awk '{print $2}')
         fi
     fi
-    sed -i "/alias crash/d" $profile
-    sed -i "/alias clash/d" $profile
-    sed -i "/export CRASHDIR/d" $profile
-    echo "alias crash=\"$CRASHDIR/menu.sh\"" >>$profile
-    echo "alias clash=\"$CRASHDIR/menu.sh\"" >>$profile
-    echo "export CRASHDIR=\"$CRASHDIR\"" >>$profile
+    [ -z "$my_alias" ] && my_alias=crash
+    sed -i "/ShellCrash\/menu.sh/"d "$profile"
+    echo "alias ${my_alias}=\"sh $CRASHDIR/menu.sh\"" >>"$profile"
+    sed -i "/export CRASHDIR/d" "$profile"
+    echo "export CRASHDIR=\"$CRASHDIR\"" >>"$profile"
     [ -f "$CRASHDIR"/.dis_startup ] && cronset "保守模式守护进程" || $0 start
     ;;
 webget)
@@ -2183,7 +2171,7 @@ webget)
     #参数【$4】代表输出显示，【$5】不启用重定向
     #参数【$6】代表验证证书，【$7】使用自定义UA
     [ -n "$7" ] && agent="--user-agent \"$7\""
-	if wget --version >/dev/null 2>&1; then
+	if wget --help 2>&1 | grep -q 'show-progress' >/dev/null 2>&1; then
 		[ "$4" = "echooff" ] && progress='-q' || progress='-q --show-progress'
 		[ "$5" = "rediroff" ] && redirect='--max-redirect=0' || redirect=''
 		[ "$6" = "skipceroff" ] && certificate='' || certificate='--no-check-certificate'

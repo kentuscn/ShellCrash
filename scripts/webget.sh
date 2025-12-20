@@ -523,7 +523,7 @@ EOF
 	#调用内核测试
 	${CRASHDIR}/start.sh core_check && ${TMPDIR}/CrashCore merge ${TMPDIR}/config.json -C ${TMPDIR}/providers
 	if [ "$?" = 0 ];then
-		echo -e "\033[32m配置文件生成成功！\033[0m"
+		echo -e "\033[32m配置文件生成成功！如果启动超时建议更新里手动安装Singbox-srs数据库常用包！\033[0m"
 		mkdir -p ${CRASHDIR}/jsons
 		mv -f ${TMPDIR}/config.json ${CRASHDIR}/jsons/config.json
 		rm -rf ${TMPDIR}/providers
@@ -1333,7 +1333,10 @@ getcore(){ #下载内核文件
 		rm -rf ${TMPDIR}/core_new.tar.gz
 		[ -z "$custcorelink" ] && error_down
 	else
-		[ -n "$(pidof CrashCore)" ] && ${CRASHDIR}/start.sh stop #停止内核服务防止内存不足
+		[ -n "$(pidof CrashCore)" ] && {
+			${CRASHDIR}/start.sh stop #停止内核服务防止内存不足
+			rm -rf "$TMPDIR"/CrashCore #删除缓存内核防止缓存空间不足
+		}
 		[ -f ${TMPDIR}/core_new.tar.gz ] && {
 			mkdir -p ${TMPDIR}/core_tmp
 			[ "$BINDIR" = "$TMPDIR" ] && rm -rf ${TMPDIR}/CrashCore #小闪存模式防止空间不足
