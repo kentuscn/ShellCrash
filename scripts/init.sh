@@ -1,8 +1,6 @@
 #!/bin/sh
 # Copyright (C) Juewuy
 
-version=1.9.3pre2
-
 setdir() {
     dir_avail() {
         df $2 $1 | awk '{ for(i=1;i<=NF;i++){ if(NR==1){ arr[i]=$i; }else{ arr[i]=arr[i]" "$i; } } } END{ for(i=1;i<=NF;i++){ print arr[i]; } }' | grep -E 'Ava|可用' | awk '{print $2}'
@@ -191,9 +189,8 @@ mkdir -p ${CRASHDIR}/configs
 [ -w /etc/systemd/system ] && sysdir=/etc/systemd/system
 if [ -f /etc/rc.common -a "$(cat /proc/1/comm)" = "procd" ]; then
     #设为init.d方式启动
-    cp -f ${CRASHDIR}/shellcrash.procd /etc/init.d/shellcrash
+    cp -f ${CRASHDIR}/starts/shellcrash.procd /etc/init.d/shellcrash
     chmod 755 /etc/init.d/shellcrash
-    rm -rf ${CRASHDIR}/shellcrash.openrc
 elif [ -n "$sysdir" -a "$USER" = "root" -a "$(cat /proc/1/comm)" = "systemd" ]; then
     #创建shellcrash用户
     userdel shellcrash 2>/dev/null
@@ -206,25 +203,29 @@ elif [ -n "$sysdir" -a "$USER" = "root" -a "$(cat /proc/1/comm)" = "systemd" ]; 
         echo "shellcrash:x:0:7890::/home/shellcrash:/bin/sh" >>/etc/passwd
     fi
     #配置systemd
-    mv -f ${CRASHDIR}/shellcrash.service $sysdir/shellcrash.service 2>/dev/null
+    mv -f ${CRASHDIR}/starts/shellcrash.service $sysdir/shellcrash.service 2>/dev/null
     sed -i "s%/etc/ShellCrash%$CRASHDIR%g" $sysdir/shellcrash.service
     systemctl daemon-reload
+	rm -rf ${CRASHDIR}/starts/shellcrash.procd
 elif rc-status -r >/dev/null 2>&1; then
     #设为openrc方式启动
-    cp -f ${CRASHDIR}/shellcrash.openrc /etc/init.d/shellcrash
+    mv -f ${CRASHDIR}/starts/shellcrash.openrc /etc/init.d/shellcrash
     chmod 755 /etc/init.d/shellcrash
-    rm -rf ${CRASHDIR}/shellcrash.procd
+    rm -rf ${CRASHDIR}/starts/shellcrash.procd
 else
     #设为保守模式启动
     setconfig start_old 已开启
+	rm -rf ${CRASHDIR}/starts/shellcrash.procd
 fi
+rm -rf ${CRASHDIR}/starts/shellcrash.service
+rm -rf ${CRASHDIR}/starts/shellcrash.openrc
 
 #修饰文件及版本号
 command -v bash >/dev/null 2>&1 && shtype=bash
 [ -x /bin/ash ] && shtype=ash
-for file in start.sh task.sh menu.sh; do
+for file in start.sh menus/5-task.sh menu.sh; do
     sed -i "s|/bin/sh|/bin/$shtype|" ${CRASHDIR}/${file} 2>/dev/null
-    chmod 755 ${CRASHDIR}/${file} 2>/dev/null
+    chmod +x ${CRASHDIR}/${file} 2>/dev/null
 done
 setconfig versionsh_l $version
 #生成用于执行启动服务的变量文件
@@ -252,20 +253,18 @@ grep -q 'firewall_mod' "$CRASHDIR/configs/ShellClash.cfg" 2>/dev/null || {
 #设置环境变量
 [ -w /opt/etc/profile ] && profile=/opt/etc/profile
 [ -w /jffs/configs/profile.add ] && profile=/jffs/configs/profile.add
-[ -w ~/.bashrc ] && profile=~/.bashrc
-[ -w /etc/profile ] && profile=/etc/profile
+[ -z "$profile" ] && profile=/etc/profile
 set_profile() {
     [ -z "$my_alias" ] && my_alias=crash
-    sed -i "/ShellCrash\/menu.sh/"d "$profile"
+    sed -i "/ShellCrash\/menu.sh/"d "$1"
     echo "alias ${my_alias}=\"$shtype $CRASHDIR/menu.sh\"" >>"$1" #设置快捷命令环境变量
     sed -i '/export CRASHDIR=*/'d "$1"
     echo "export CRASHDIR=\"$CRASHDIR\"" >>"$1" #设置路径环境变量
-    . "$1" >/dev/null 2>&1
 }
 if [ -n "$profile" ]; then
     set_profile "$profile"
     #适配zsh环境变量
-    zsh --version >/dev/null 2>&1 && [ -z "$(cat ~/.zshrc 2>/dev/null | grep CRASHDIR)" ] && set_profile '~/.zshrc' 2>/dev/null
+    zsh --version >/dev/null 2>&1 && [ -z "$(cat $HOME/.zshrc 2>/dev/null | grep CRASHDIR)" ] && set_profile '$HOME/.zshrc'
     setconfig my_alias "$my_alias"
 else
     echo -e "\033[33m无法写入环境变量！请检查安装权限！\033[0m"
@@ -283,16 +282,16 @@ fi
 [ -f "/etc/storage/started_script.sh" ] && mount -t tmpfs -o remount,rw,size=45M tmpfs /tmp #增加/tmp空间以适配新的内核压缩方式
 #镜像化OpenWrt(snapshot)额外设置
 if [ "$systype" = "mi_snapshot" -o "$systype" = "ng_snapshot" ]; then
-    chmod 755 ${CRASHDIR}/misnap_init.sh
+    chmod 755 ${CRASHDIR}/starts/snapshot_init.sh
     uci delete firewall.ShellClash 2>/dev/null
     uci delete firewall.ShellCrash 2>/dev/null
     uci set firewall.ShellCrash=include
     uci set firewall.ShellCrash.type='script'
-    uci set firewall.ShellCrash.path="$CRASHDIR/misnap_init.sh"
+    uci set firewall.ShellCrash.path="$CRASHDIR/starts/snapshot_init.sh"
     uci set firewall.ShellCrash.enabled='1'
     uci commit firewall
 else
-    rm -rf ${CRASHDIR}/misnap_init.sh
+    rm -rf ${CRASHDIR}/starts/snapshot_init.sh
 fi
 #华硕USB启动额外设置
 [ "$usb_status" = "1" ] && {
@@ -339,7 +338,6 @@ for file in fake_ip_filter mac web_save servers.list fake_ip_filter.list fallbac
     mv -f ${CRASHDIR}/$file ${CRASHDIR}/configs/$file 2>/dev/null
 done
 #配置文件改名
-mv -f ${CRASHDIR}/mark ${CRASHDIR}/configs/ShellCrash.cfg 2>/dev/null
 mv -f ${CRASHDIR}/configs/ShellClash.cfg ${CRASHDIR}/configs/ShellCrash.cfg 2>/dev/null
 #数据库改名
 mv -f ${CRASHDIR}/geosite.dat ${CRASHDIR}/GeoSite.dat 2>/dev/null
@@ -355,7 +353,7 @@ mv -f ${CRASHDIR}/clash ${CRASHDIR}/CrashCore 2>/dev/null
 for file in dropbear_rsa_host_key authorized_keys tun.ko ShellDDNS.sh; do
     mv -f ${CRASHDIR}/$file ${CRASHDIR}/tools/$file 2>/dev/null
 done
-for file in cron task.sh task.list; do
+for file in cron task.list; do
     mv -f ${CRASHDIR}/$file ${CRASHDIR}/task/$file 2>/dev/null
 done
 #旧版文件清理
@@ -364,9 +362,10 @@ sed -i '/shellclash/d' /etc/passwd
 sed -i '/shellclash/d' /etc/group
 rm -rf /etc/init.d/clash
 rm -rf ${CRASHDIR}/rules
+rm -rf "$CRASHDIR/task/task.sh"
 [ "$systype" = "mi_snapshot" -a "$CRASHDIR" != '/data/clash' ] && rm -rf /data/clash
-for file in CrashCore clash.sh getdate.sh core.new clashservice log shellcrash.service mark? mark.bak; do
-    rm -rf ${CRASHDIR}/$file
+for file in CrashCore clash.sh getdate.sh core.new clashservice log mark? mark.bak; do
+    rm -rf "$CRASHDIR/$file"
 done
 #旧版变量改名
 sed -i "s/clashcore/crashcore/g" $configpath
@@ -379,4 +378,4 @@ sed -i "s/redir_mod=Nft混合/redir_mod=Tproxy模式/g" $configpath
 sed -i "s/redir_mod=Tproxy混合/redir_mod=Tproxy模式/g" $configpath
 sed -i "s/redir_mod=纯净模式/firewall_area=4/g" $configpath
 
-echo -e "\033[32m脚本初始化完成,请输入\033[30;47m crash \033[0;33m命令开始使用！\033[0m"
+echo -e "\033[32m脚本初始化完成,请输入\033[30;47m $my_alias \033[0;33m命令开始使用！\033[0m"
