@@ -71,6 +71,9 @@ dns:
     - "*.msftconnecttest.com"      # Windows 网络检测服务避免 fake-ip
     - "*.apple.com"                # Apple 相关服务避免 fake-ip，防止 iCloud 解析问题
     - "*.windows.com"              # Windows 相关域名解析为真实 IP  
+    - cloudflare-dns.com
+    - "*.cloudflare.com"
+    - "*.cloudflare-dns.com"
 
  # 指定域名查询的解析服务器，可使用 geosite 或'rule-set:cn': 优先于 nameserver/fallback 查询
   #nameserver-policy:
