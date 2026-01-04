@@ -7,14 +7,16 @@ CRASHDIR=$(
 )
 CFG_PATH="$CRASHDIR"/configs/ShellCrash.cfg
 #加载执行目录，失败则初始化
-. "$CRASHDIR"/configs/command.env 2>/dev/null
+. "$CRASHDIR"/libs/get_config.sh
 [ -z "$BINDIR" -o -z "$TMPDIR" -o -z "$COMMAND" ] && . "$CRASHDIR"/init.sh >/dev/null 2>&1
 [ ! -f "$TMPDIR" ] && mkdir -p "$TMPDIR"
-[ -n "$(tar --help 2>&1 | grep -o 'no-same-owner')" ] && tar_para='--no-same-owner' #tar命令兼容
 
 #通用工具
 . "$CRASHDIR"/libs/set_config.sh
 . "$CRASHDIR"/libs/check_cmd.sh
+. "$CRASHDIR"/libs/check_autostart.sh
+. "$CRASHDIR"/menus/1_start.sh
+. "$CRASHDIR"/menus/running_status.sh
 errornum() {
     echo "-----------------------------------------------"
     echo -e "\033[31m请输入正确的字母或数字！\033[0m"
@@ -51,12 +53,6 @@ ckstatus() { #脚本启动前检查
     fi
     versionsh=$(cat "$CRASHDIR"/version)
     [ -n "$versionsh" ] && versionsh_l=$versionsh
-    #服务器缺省地址
-    [ -z "$mix_port" ] && mix_port=7890
-    [ -z "$redir_port" ] && redir_port=7892
-    [ -z "$fwmark" ] && fwmark=$redir_port
-    [ -z "$db_port" ] && db_port=9999
-    [ -z "$dns_port" ] && dns_port=1053
     [ -z "$redir_mod" ] && redir_mod=纯净模式
     #获取本机host地址
     [ -z "$host" ] && host=$(ubus call network.interface.lan status 2>&1 | grep \"address\" | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
@@ -72,19 +68,7 @@ ckstatus() { #脚本启动前检查
         hostdir=":$db_port/ui"
     fi
     #开机自启检测
-    if [ -f /etc/rc.common -a "$(cat /proc/1/comm)" = "procd" ]; then
-        [ -n "$(find /etc/rc.d -name '*shellcrash')" ] && autostart=enable || autostart=disable
-    elif ckcmd systemctl; then
-        [ "$(systemctl is-enabled shellcrash.service 2>&1)" = enabled ] && autostart=enable || autostart=disable
-	elif grep -q 's6' /proc/1/comm; then
-		[ -f /etc/s6-overlay/s6-rc.d/user/contents.d/afstart ] && autostart=enable || autostart=disable
-    elif rc-status -r >/dev/null 2>&1; then
-        rc-update show default | grep -q "shellcrash" && autostart=enable || autostart=disable
-    else
-        [ -f "$CRASHDIR"/.dis_startup ] && autostart=disable || autostart=enable
-    fi
-    #开机自启描述
-    if [ "$autostart" = "enable" ]; then
+    if check_autostart; then
         auto="\033[32m已设置开机启动！\033[0m"
         auto1="\033[36m禁用\033[0mShellCrash开机启动"
     else
@@ -95,16 +79,7 @@ ckstatus() { #脚本启动前检查
     PID=$(pidof CrashCore | awk '{print $NF}')
     if [ -n "$PID" ]; then
         run="\033[32m正在运行（$redir_mod）\033[0m"
-        VmRSS=$(cat /proc/$PID/status | grep -w VmRSS | awk 'unit="MB" {printf "%.2f %s\n", $2/1000, unit}')
-        #获取运行时长
-        touch "$TMPDIR"/crash_start_time #用于延迟启动的校验
-        start_time=$(cat "$TMPDIR"/crash_start_time)
-        if [ -n "$start_time" ]; then
-            time=$(($(date +%s) - start_time))
-            day=$((time / 86400))
-            [ "$day" = "0" ] && day='' || day="$day天"
-            time=$(date -u -d @${time} +%H小时%M分%S秒)
-        fi
+        running_status
     elif [ "$firewall_area" = 5 ] && [ -n "$(ip route list table 100)" ]; then
         run="\033[32m已设置（$redir_mod）\033[0m"
     else
@@ -118,7 +93,7 @@ ckstatus() { #脚本启动前检查
     #输出状态
     echo "-----------------------------------------------"
     echo -e "\033[30;46m欢迎使用ShellCrash！\033[0m		版本：$versionsh_l"
-    echo -e "$corename服务"$run"，"$auto""
+    echo -e "$corename服务$run，$auto"
     if [ -n "$PID" ]; then
         echo -e "当前内存占用：\033[44m"$VmRSS"\033[0m，已运行：\033[46;30m"$day"\033[44;37m"$time"\033[0m"
     fi
@@ -132,29 +107,22 @@ ckstatus() { #脚本启动前检查
     #检查执行权限
     [ ! -x "$CRASHDIR"/start.sh ] && chmod +x "$CRASHDIR"/start.sh
     #检查/tmp内核文件
-    for file in $(ls /tmp | grep -v [/$] | grep -v ' ' | grep -Ev ".*(gz|zip|7z|tar)$" | grep -iE 'CrashCore|^clash$|^clash-linux.*|^mihomo.*|^sing.*box|meta.*'); do
-        chmod +x /tmp/$file
+    for file in $(ls /tmp | grep -v [/$] | grep -v ' ' | grep -Ev ".*(zip|7z|tar)$" | grep -iE 'CrashCore|^clash$|^clash-linux.*|^mihomo.*|^sing.*box|meta.*'); do
         echo -e "发现可用的内核文件： \033[36m/tmp/$file\033[0m "
         read -p "是否加载(会停止当前服务)？(1/0) > " res
         [ "$res" = 1 ] && {
-            "$CRASHDIR"/start.sh stop
-            core_v=$(/tmp/$file -v 2>/dev/null | head -n 1 | sed 's/ linux.*//;s/.* //')
-            [ -z "$core_v" ] && core_v=$(/tmp/$file version 2>/dev/null | grep -Eo 'version .*' | sed 's/version //')
-            if [ -n "$core_v" ]; then
-                . "$CRASHDIR"/menus/9_upgrade.sh && setcoretype &&
-                    mv -f /tmp/$file "$TMPDIR"/CrashCore &&
-                    tar -zcf "$BINDIR"/CrashCore.tar.gz ${tar_para} -C "$TMPDIR" CrashCore &&
-                    echo -e "\033[32m内核加载完成！\033[0m " &&
-                    setconfig crashcore $crashcore &&
-                    setconfig core_v $core_v &&
-                    switch_core
-                sleep 1
+			zip_type=$(echo "$file" | grep -oE 'tar.gz$|upx$|gz$')
+			. "$CRASHDIR"/menus/9_upgrade.sh && setcoretype
+			. "$CRASHDIR"/libs/core_tools.sh && core_check "/tmp/$file"
+            if [ "$?" = 0 ]; then
+				echo -e "\033[32m内核加载完成！\033[0m "
+				switch_core
             else
                 echo -e "\033[33m检测到不可用的内核文件！可能是文件受损或CPU架构不匹配！\033[0m"
-                rm -rf /tmp/$file
-                echo -e "\033[33m内核文件已移除，请认真检查后重新上传！\033[0m"
-                sleep 2
+                rm -rf /tmp/"$file"
+                echo -e "\033[33m内核文件已移除，请认真检查后重新上传！\033[0m"       
             fi
+			sleep 1
         }
         echo "-----------------------------------------------"
     done
@@ -205,7 +173,7 @@ main_menu() {
         exit
 	;;
     1)
-        . "$CRASHDIR"/menus/1_start.sh && start_service
+        start_service
         exit
 	;;
     2)
@@ -218,7 +186,8 @@ main_menu() {
         main_menu
 	;;
     3)
-        "$CRASHDIR"/start.sh stop
+        [ "$bot_tg_service" = ON ] && . "$CRASHDIR"/menus/bot_tg_service.sh && bot_tg_stop
+		"$CRASHDIR"/start.sh stop
         sleep 1
         echo "-----------------------------------------------"
         echo -e "\033[31m$corename服务已停止！\033[0m"
@@ -239,10 +208,10 @@ main_menu() {
     7)
 		GT_CFG_PATH="$CRASHDIR"/configs/gateway.cfg
 		touch "$GT_CFG_PATH"
-        checkcfg=$(cat $GT_CFG_PATH)
+        checkcfg=$(cat "$CFG_PATH" "$GT_CFG_PATH")
         . "$CRASHDIR"/menus/7_gateway.sh && gateway
         if [ -n "$PID" ]; then
-            checkcfg_new=$(cat $GT_CFG_PATH)
+            checkcfg_new=$(cat "$CFG_PATH" "$GT_CFG_PATH")
             [ "$checkcfg" != "$checkcfg_new" ] && checkrestart
         fi
         main_menu
@@ -279,7 +248,7 @@ case "$1" in
 		"$CRASHDIR"/start.sh $2 $3 $4 $5 $6
     ;;
 	-i)
-		. "$CRASHDIR"/init.sh
+		. "$CRASHDIR"/init.sh 2>/dev/null
     ;;
 	-st)
 		shtype=sh && [ -n "$(ls -l /bin/sh | grep -o dash)" ] && shtype=bash

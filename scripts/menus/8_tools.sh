@@ -1,184 +1,201 @@
 #!/bin/sh
 # Copyright (C) Juewuy
-#工具脚本
+
+[ -n "$__IS_MODULE_8_TOOLS_LOADED" ] && return
+__IS_MODULE_8_TOOLS_LOADED=1
+
+. "$CRASHDIR"/libs/logger.sh
+. "$CRASHDIR"/libs/web_get_bin.sh
+
+stop_iptables() {
+	iptables -w -t nat -D PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 >/dev/null 2>&1
+	ip6tables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 >/dev/null 2>&1
+}
+
+ssh_tools() {
+	while true; do
+		[ -n "$(cat /etc/firewall.user 2>&1 | grep '启用外网访问SSH服务')" ] && ssh_ol=禁止 || ssh_ol=开启
+		[ -z "$ssh_port" ] && ssh_port=10022
+		echo "-----------------------------------------------"
+		echo -e "\033[33m此功能仅针对使用Openwrt系统的设备生效，且不依赖服务\033[0m"
+		echo -e "\033[31m本功能不支持红米AX6S等镜像化系统设备，请勿尝试！\033[0m"
+		echo "-----------------------------------------------"
+		echo -e " 1 \033[32m修改\033[0m外网访问端口：\033[36m$ssh_port\033[0m"
+		echo -e " 2 \033[32m修改\033[0mSSH访问密码(请连续输入2次后回车)"
+		echo -e " 3 \033[33m$ssh_ol\033[0m外网访问SSH"
+		echo "-----------------------------------------------"
+		echo -e " 0 返回上级菜单 \033[0m"
+		echo "-----------------------------------------------"
+		read -p "请输入对应数字 > " num
+		case "$num" in
+		""|0) 
+			break
+			;;
+		1)
+			read -p "请输入端口号(1000-65535) > " num
+			if [ -z "$num" ]; then
+				errornum
+			elif [ $num -gt 65535 -o $num -le 999 ]; then
+				echo -e "\033[31m输入错误！请输入正确的数值(1000-65535)！\033[0m"
+			elif [ -n "$(netstat -ntul | grep :$num)" ]; then
+				echo -e "\033[31m当前端口已被其他进程占用，请重新输入！\033[0m"
+			else
+				ssh_port=$num
+				setconfig ssh_port $ssh_port
+				sed -i "/启用外网访问SSH服务/d" /etc/firewall.user
+				stop_iptables
+				echo -e "\033[32m设置成功，请重新开启外网访问SSH功能！！！\033[0m"
+			fi
+			sleep 1
+			;;
+		2)
+			passwd
+			sleep 1
+			;;
+		3)
+			if [ "$ssh_ol" = "开启" ]; then
+				iptables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22
+				[ -n "$(ckcmd ip6tables)" ] && ip6tables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22
+				echo "iptables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 #启用外网访问SSH服务" >>/etc/firewall.user
+				[ -n "$(ckcmd ip6tables)" ] && echo "ip6tables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 #启用外网访问SSH服务" >>/etc/firewall.user
+				echo "-----------------------------------------------"
+				echo -e "已开启外网访问SSH功能！"
+			else
+				sed -i "/启用外网访问SSH服务/d" /etc/firewall.user
+				stop_iptables
+				echo "-----------------------------------------------"
+				echo -e "已禁止外网访问SSH！"
+			fi
+			break
+			;;
+		*)
+			errornum
+			sleep 1
+			break
+			;;
+		esac
+	done
+}
+
 #工具与优化
 tools() {
-    ssh_tools() {
-        stop_iptables() {
-            iptables -w -t nat -D PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 >/dev/null 2>&1
-            ip6tables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 >/dev/null 2>&1
-        }
-        [ -n "$(cat /etc/firewall.user 2>&1 | grep '启用外网访问SSH服务')" ] && ssh_ol=禁止 || ssh_ol=开启
-        [ -z "$ssh_port" ] && ssh_port=10022
-        echo "-----------------------------------------------"
-        echo -e "\033[33m此功能仅针对使用Openwrt系统的设备生效，且不依赖服务\033[0m"
-        echo -e "\033[31m本功能不支持红米AX6S等镜像化系统设备，请勿尝试！\033[0m"
-        echo "-----------------------------------------------"
-        echo -e " 1 \033[32m修改\033[0m外网访问端口：\033[36m$ssh_port\033[0m"
-        echo -e " 2 \033[32m修改\033[0mSSH访问密码(请连续输入2次后回车)"
-        echo -e " 3 \033[33m$ssh_ol\033[0m外网访问SSH"
-        echo "-----------------------------------------------"
-        echo -e " 0 返回上级菜单 \033[0m"
-        echo "-----------------------------------------------"
-        read -p "请输入对应数字 > " num
-        case "$num" in
-        0) ;;
-        1)
-            read -p "请输入端口号(1000-65535) > " num
-            if [ -z "$num" ]; then
-                errornum
-            elif [ $num -gt 65535 -o $num -le 999 ]; then
-                echo -e "\033[31m输入错误！请输入正确的数值(1000-65535)！\033[0m"
-            elif [ -n "$(netstat -ntul | grep :$num)" ]; then
-                echo -e "\033[31m当前端口已被其他进程占用，请重新输入！\033[0m"
-            else
-                ssh_port=$num
-                setconfig ssh_port $ssh_port
-                sed -i "/启用外网访问SSH服务/d" /etc/firewall.user
-                stop_iptables
-                echo -e "\033[32m设置成功，请重新开启外网访问SSH功能！！！\033[0m"
-            fi
-            sleep 1
-            ssh_tools
-            ;;
-        2)
-            passwd
-            sleep 1
-            ssh_tools
-            ;;
-        3)
-            if [ "$ssh_ol" = "开启" ]; then
-                iptables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22
-                [ -n "$(ckcmd ip6tables)" ] && ip6tables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22
-                echo "iptables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 #启用外网访问SSH服务" >>/etc/firewall.user
-                [ -n "$(ckcmd ip6tables)" ] && echo "ip6tables -w -t nat -A PREROUTING -p tcp -m multiport --dports $ssh_port -j REDIRECT --to-ports 22 #启用外网访问SSH服务" >>/etc/firewall.user
-                echo "-----------------------------------------------"
-                echo -e "已开启外网访问SSH功能！"
-            else
-                sed -i "/启用外网访问SSH服务/d" /etc/firewall.user
-                stop_iptables
-                echo "-----------------------------------------------"
-                echo -e "已禁止外网访问SSH！"
-            fi
-            ;;
-        *)
-            errornum
-            ;;
-        esac
-    }
-    #获取设置默认显示
-    grep -qE "^\s*[^#].*otapredownload" /etc/crontabs/root >/dev/null 2>&1 && mi_update=禁用 || mi_update=启用
-    [ "$mi_mi_autoSSH" = "已配置" ] && mi_mi_autoSSH_type=32m已配置 || mi_mi_autoSSH_type=31m未配置
-    [ -f "$CRASHDIR"/tools/tun.ko ] && mi_tunfix=32m已启用 || mi_tunfix=31m未启用
-    #
-    echo "-----------------------------------------------"
-    echo -e "\033[30;47m欢迎使用其他工具菜单：\033[0m"
-    echo -e "\033[33m本页工具可能无法兼容全部Linux设备，请酌情使用！\033[0m"
-    echo -e "磁盘占用/所在目录："
-    du -sh "$CRASHDIR"
-    echo "-----------------------------------------------"
-    echo -e " 1 ShellCrash\033[33m测试菜单\033[0m"
-    echo -e " 2 ShellCrash\033[32m新手引导\033[0m"
-    echo -e " 3 \033[36m日志及推送工具\033[0m"
-    [ -f /etc/firewall.user ] && echo -e " 4 \033[32m配置\033[0m外网访问SSH"
-    [ -x /usr/sbin/otapredownload ] && echo -e " 5 \033[33m$mi_update\033[0m小米系统自动更新"
-    [ "$systype" = "mi_snapshot" ] && echo -e " 6 小米设备软固化SSH ———— \033[$mi_mi_autoSSH_type \033[0m"
-    [ "$systype" = "mi_snapshot" ] && echo -e " 8 小米设备Tun模块修复 ———— \033[$mi_tunfix \033[0m"
-    echo "-----------------------------------------------"
-    echo -e " 0 返回上级菜单"
-    echo "-----------------------------------------------"
-    read -p "请输入对应数字 > " num
-    if [ -z "$num" ]; then
-        errornum
-    elif [ "$num" = 0 ]; then
-        i=
-
-    elif [ "$num" = 1 ]; then
-        testcommand
-
-    elif [ "$num" = 2 ]; then
-		userguide
-
-    elif [ "$num" = 3 ]; then
-        log_pusher
-        tools
-
-    elif [ "$num" = 4 ]; then
-        ssh_tools
-        sleep 1
-        tools
-
-    elif [ "$num" = 7 ]; then
-        echo "-----------------------------------------------"
-        if [ ! -f "$CRASHDIR"/tools/ShellDDNS.sh ]; then
-            echo -e "正在获取在线脚本……"
-            "$CRASHDIR"/start.sh get_bin "$TMPDIR"/ShellDDNS.sh tools/ShellDDNS.sh
-            if [ "$?" = "0" ]; then
-                mv -f "$TMPDIR"/ShellDDNS.sh "$CRASHDIR"/tools/ShellDDNS.sh
-                . "$CRASHDIR"/tools/ShellDDNS.sh
-            else
-                echo -e "\033[31m文件下载失败！\033[0m"
-            fi
-        else
-            . "$CRASHDIR"/tools/ShellDDNS.sh
-        fi
-        sleep 1
-        tools
-
-    elif [ -x /usr/sbin/otapredownload ] && [ "$num" = 5 ]; then
-        if [ "$mi_update" = "禁用" ]; then
-            grep -q "otapredownload" /etc/crontabs/root &&
-                sed -i "/^[^\#]*otapredownload/ s/^/#/" /etc/crontabs/root ||
-                echo "#15 3,4,5 * * * /usr/sbin/otapredownload >/dev/null 2>&1" >>/etc/crontabs/root
-        else
-            grep -q "otapredownload" /etc/crontabs/root &&
-                sed -i "/^\s*#.*otapredownload/ s/^\s*#//" /etc/crontabs/root ||
-                echo "15 3,4,5 * * * /usr/sbin/otapredownload >/dev/null 2>&1" >>/etc/crontabs/root
-        fi
-        echo "-----------------------------------------------"
-        echo -e "已\033[33m$mi_update\033[0m小米路由器的自动更新，如未生效，请在官方APP中同步设置！"
-        sleep 1
-        tools
-
-    elif [ "$num" = 6 ]; then
-        if [ "$systype" = "mi_snapshot" ]; then
-            mi_autoSSH
-        else
-            echo "不支持的设备！"
-        fi
-        tools
-    elif [ "$num" = 8 ]; then
-        if [ -f "$CRASHDIR"/tools/tun.ko ]; then
-            read -p "是否禁用此功能并移除相关补丁？(1/0) > " res
-            [ "$res" = 1 ] && {
-                rm -rf "$CRASHDIR"/tools/tun.ko
-                echo -e "\033[33m补丁文件已移除，请立即重启设备以防止出错！\033[0m"
-            }
-        elif ckcmd modinfo && [ -z "$(modinfo tun)" ]; then
-            echo -e "\033[33m本功能需要修改系统文件，不保证没有任何风险！\033[0m"
-            echo -e "\033[33m本功能采集的Tun模块并不一定适用于你的设备！\033[0m"
-            sleep 1
-            read -p "我已知晓，出现问题会自行承担！(1/0) > " res
-            if [ "$res" = 1 ]; then
-                echo "-----------------------------------------------"
-                echo "正在连接服务器获取Tun模块补丁文件…………"
-                "$CRASHDIR"/start.sh get_bin "$TMPDIR"/tun.ko bin/fix/tun.ko
-                if [ "$?" = "0" ]; then
-                    mv -f "$TMPDIR"/tun.ko "$CRASHDIR"/tools/tun.ko &&
-                        "$CRASHDIR"/misnap_init.sh tunfix &&
-                        echo -e "\033[32m设置成功！请重启服务！\033[0m"
-                else
-                    echo -e "\033[31m文件下载失败，请重试！\033[0m"
-                fi
-            fi
-        else
-            echo -e "\033[31m当前设备无需设置，请勿尝试！\033[0m"
-            sleep 1
-        fi
-        tools
-    else
-        errornum
-    fi
+	while true; do
+	    #获取设置默认显示
+	    grep -qE "^\s*[^#].*otapredownload" /etc/crontabs/root >/dev/null 2>&1 && mi_update=禁用 || mi_update=启用
+	    [ "$mi_mi_autoSSH" = "已配置" ] && mi_mi_autoSSH_type=32m已配置 || mi_mi_autoSSH_type=31m未配置
+	    [ -f "$CRASHDIR"/tools/tun.ko ] && mi_tunfix=32m已启用 || mi_tunfix=31m未启用
+	
+	    echo "-----------------------------------------------"
+	    echo -e "\033[30;47m欢迎使用其他工具菜单：\033[0m"
+	    echo -e "\033[33m本页工具可能无法兼容全部Linux设备，请酌情使用！\033[0m"
+	    echo -e "磁盘占用/所在目录："
+	    du -sh "$CRASHDIR"
+	    echo "-----------------------------------------------"
+	    echo -e " 1 ShellCrash\033[33m测试菜单\033[0m"
+	    echo -e " 2 ShellCrash\033[32m新手引导\033[0m"
+	    echo -e " 3 \033[36m日志及推送工具\033[0m"
+	    [ -f /etc/firewall.user ] && echo -e " 4 \033[32m配置\033[0m外网访问SSH"
+	    [ -x /usr/sbin/otapredownload ] && echo -e " 5 \033[33m$mi_update\033[0m小米系统自动更新"
+	    [ "$systype" = "mi_snapshot" ] && echo -e " 6 小米设备软固化SSH ———— \033[$mi_mi_autoSSH_type \033[0m"
+	    [ "$systype" = "mi_snapshot" ] && echo -e " 8 小米设备Tun模块修复 ———— \033[$mi_tunfix \033[0m"
+	    echo "-----------------------------------------------"
+	    echo -e " 0 返回上级菜单"
+	    echo "-----------------------------------------------"
+	    read -p "请输入对应数字 > " num
+		case "$num" in
+	    ""|0)
+			break
+	        ;;
+	    1)
+	        testcommand
+			break
+	        ;;
+	    2)
+	        userguide
+			break
+	        ;;
+	    3)
+	        log_pusher
+	        ;;
+	    4)
+			ssh_tools
+			sleep 1
+	        ;;
+	    5)
+	        if [ -x /usr/sbin/otapredownload ]; then
+	            if [ "$mi_update" = "禁用" ]; then
+	                grep -q "otapredownload" /etc/crontabs/root &&
+	                    sed -i "/^[^\#]*otapredownload/ s/^/#/" /etc/crontabs/root ||
+	                    echo "#15 3,4,5 * * * /usr/sbin/otapredownload >/dev/null 2>&1" >>/etc/crontabs/root
+	            else
+	                grep -q "otapredownload" /etc/crontabs/root &&
+	                    sed -i "/^\s*#.*otapredownload/ s/^\s*#//" /etc/crontabs/root ||
+	                    echo "15 3,4,5 * * * /usr/sbin/otapredownload >/dev/null 2>&1" >>/etc/crontabs/root
+	            fi
+	            echo "-----------------------------------------------"
+	            echo -e "已\033[33m$mi_update\033[0m小米路由器的自动更新，如未生效，请在官方APP中同步设置！"
+	            sleep 1
+	        fi
+	        ;;
+	    6)
+	        if [ "$systype" = "mi_snapshot" ]; then
+	            mi_autoSSH
+	        else
+	            echo "不支持的设备！"
+	        fi
+	        ;;
+	    7)
+	        echo "-----------------------------------------------"
+	        if [ ! -f "$CRASHDIR"/tools/ShellDDNS.sh ]; then
+	            echo -e "正在获取在线脚本……"
+	            get_bin "$TMPDIR"/ShellDDNS.sh tools/ShellDDNS.sh
+	            if [ "$?" = "0" ]; then
+	                mv -f "$TMPDIR"/ShellDDNS.sh "$CRASHDIR"/tools/ShellDDNS.sh
+	                . "$CRASHDIR"/tools/ShellDDNS.sh
+	            else
+	                echo -e "\033[31m文件下载失败！\033[0m"
+	            fi
+	        else
+	            . "$CRASHDIR"/tools/ShellDDNS.sh
+	        fi
+	        sleep 1
+	        ;;
+	    8)
+	        if [ -f "$CRASHDIR"/tools/tun.ko ]; then
+	            read -p "是否禁用此功能并移除相关补丁？(1/0) > " res
+	            [ "$res" = 1 ] && {
+	                rm -rf "$CRASHDIR"/tools/tun.ko
+	                echo -e "\033[33m补丁文件已移除，请立即重启设备以防止出错！\033[0m"
+	            }
+	        elif ckcmd modinfo && [ -z "$(modinfo tun)" ]; then
+	            echo -e "\033[33m本功能需要修改系统文件，不保证没有任何风险！\033[0m"
+	            echo -e "\033[33m本功能采集的Tun模块并不一定适用于你的设备！\033[0m"
+	            sleep 1
+	            read -p "我已知晓，出现问题会自行承担！(1/0) > " res
+	            if [ "$res" = 1 ]; then
+	                echo "-----------------------------------------------"
+	                echo "正在连接服务器获取Tun模块补丁文件…………"
+	                get_bin "$TMPDIR"/tun.ko bin/fix/tun.ko
+	                if [ "$?" = "0" ]; then
+	                    mv -f "$TMPDIR"/tun.ko "$CRASHDIR"/tools/tun.ko &&
+	                        /data/shellcrash_init.sh tunfix &&
+	                        echo -e "\033[32m设置成功！请重启服务！\033[0m"
+	                else
+	                    echo -e "\033[31m文件下载失败，请重试！\033[0m"
+	                fi
+	            fi
+	        else
+	            echo -e "\033[31m当前设备无需设置，请勿尝试！\033[0m"
+	            sleep 1
+	        fi
+	        ;;
+	    *)
+	        errornum
+			sleep 1
+			break
+	        ;;
+	    esac
+	done
 }
 
 mi_autoSSH() {
@@ -250,51 +267,8 @@ log_pusher() {
             }
         else
             #echo -e "\033[33m详细设置指南请参考 https://juewuy.github.io/ \033[0m"
-            private_bot() {
-                echo -e "请先通过 \033[32;4mhttps://t.me/BotFather\033[0m 申请TG机器人并获取其\033[36mAPI TOKEN\033[0m"
-                echo "-----------------------------------------------"
-                read -p "请输入你获取到的API TOKEN > " TOKEN
-                echo "-----------------------------------------------"
-                echo -e "请向\033[32m你申请的机器人\033[33m而不是BotFather！\033[0m"
-                url_tg=https://api.telegram.org/bot${TOKEN}/getUpdates
-            }
-            public_bot() {
-                echo -e "请向机器人：\033[32;4mhttps://t.me/ShellCrashtg_bot\033[0m"
-                TOKEN=publictoken
-                url_tg=https://tgbot.jwsc.eu.org/publictoken/getUpdates
-            }
-            set_bot() {
-                echo -e "发送此秘钥:        \033[30;46m$public_key\033[0m"
-                echo "-----------------------------------------------"
-                read -p "我已经发送完成(1/0) > " res
-                if [ "$res" = 1 ]; then
-                    [ -n "$authentication" ] && auth="$authentication@"
-                    export https_proxy="http://${auth}127.0.0.1:$mix_port"
-                    if curl --version >/dev/null 2>&1; then
-                        chat=$(curl -kfsSl $url_tg 2>/dev/null)
-                    else
-                        chat=$(wget -Y on -q -O - $url_tg)
-                    fi
-                    [ -n "$chat" ] && chat_ID=$(echo $chat | sed 's/"update_id":/{\n"update_id":/g' | grep "$public_key" | head -n1 | grep -oE '"id":.*,"is_bot' | sed s'/"id"://' | sed s'/,"is_bot//')
-                    [ -z "$chat_ID" ] && {
-                        echo -e "\033[31m无法获取对话ID，请返回重新设置或手动输入ChatID！\033[0m"
-                        echo -e "通常访问 \033[32;4m$url_tg\033[0m \n\033[36m即可看到ChatID\033[0m"
-                        read -p "请手动输入ChatID > " chat_ID
-                    }
-                    if echo "$chat_ID" | grep -qE '^[0-9]{8,}$'; then
-                        push_TG=$TOKEN
-                        setconfig push_TG $TOKEN
-                        setconfig chat_ID $chat_ID
-                        "$CRASHDIR"/start.sh logger "已完成Telegram日志推送设置！" 32
-                    else
-                        echo -e "\033[31m无法获取对话ID，请重新配置！\033[0m"
-                        sleep 1
-                        chose_bot
-                    fi
-                fi
-            }
+            . "$CRASHDIR"/menus/bot_tg_bind.sh
             chose_bot() {
-                public_key=$(cat /proc/sys/kernel/random/boot_id | sed 's/.*-//')
                 echo "-----------------------------------------------"
                 echo -e " 1 使用公共机器人	——不依赖内核服务"
                 echo -e " 2 使用私人机器人	——需要额外申请"
@@ -303,11 +277,11 @@ log_pusher() {
                 case $num in
                 1)
                     public_bot
-                    set_bot
+                    set_bot && tg_push_token || chose_bot
             	;;
                 2)
                     private_bot
-                    set_bot
+                    set_bot && tg_push_token || chose_bot
             	;;
                 *)
                     errornum
@@ -338,7 +312,7 @@ log_pusher() {
             if [ -n "$url" ]; then
                 push_Deer=$url
                 setconfig push_Deer $url
-                "$CRASHDIR"/start.sh logger "已完成PushDeer日志推送设置！" 32
+                logger "已完成PushDeer日志推送设置！" 32
             else
                 echo -e "\033[31m输入错误，请重新输入！\033[0m"
             fi
@@ -365,7 +339,7 @@ log_pusher() {
             if [ -n "$url" ]; then
                 push_bark=$url
                 setconfig push_bark $url
-                "$CRASHDIR"/start.sh logger "已完成Bark日志推送设置！" 32
+                logger "已完成Bark日志推送设置！" 32
             else
                 echo -e "\033[31m输入错误，请重新输入！\033[0m"
             fi
@@ -401,7 +375,7 @@ log_pusher() {
                     push_Po_key=$key
                     setconfig push_Po $Token
                     setconfig push_Po_key $key
-                    "$CRASHDIR"/start.sh logger "已完成Passover日志推送设置！" 32
+                    logger "已完成Passover日志推送设置！" 32
                 else
                     echo -e "\033[31m输入错误，请重新输入！\033[0m"
                 fi
@@ -428,7 +402,7 @@ log_pusher() {
             if [ -n "$Token" ]; then
                 push_PP=$Token
                 setconfig push_PP $Token
-                "$CRASHDIR"/start.sh logger "已完成PushPlus日志推送设置！" 32
+                logger "已完成PushPlus日志推送设置！" 32
             else
                 echo -e "\033[31m输入错误，请重新输入！\033[0m"
             fi
@@ -459,7 +433,7 @@ log_pusher() {
                 setconfig push_ChatURL $URL
                 setconfig push_ChatTOKEN $TOKEN
                 setconfig push_ChatUSERID $USERID
-                "$CRASHDIR"/start.sh logger "已完成SynoChat日志推送设置！" 32
+                logger "已完成SynoChat日志推送设置！" 32
             else
                 echo -e "\033[31m输入错误，请重新输入！\033[0m"
                 setconfig push_ChatURL
@@ -489,7 +463,7 @@ log_pusher() {
             if [ -n "$url" ]; then
                 push_Gotify=$url
                 setconfig push_Gotify "$url"
-                "$CRASHDIR"/start.sh logger "已完成Gotify日志推送设置！" 32
+                logger "已完成Gotify日志推送设置！" 32
             else
                 echo -e "\033[31m输入错误，请重新输入！\033[0m"
             fi
@@ -557,7 +531,7 @@ testcommand(){
 	    ;;
 	4)
 		if [ "$firewall_mod" = "nftables" ];then
-			nft list table inet shellcrash
+			nft list table inet shellcrash | sed '/set cn_ip {/,/}/d;/set cn_ip6 {/,/}/d;/^[[:space:]]*}/d'
 		else
 			[ "$firewall_area" = 1 -o "$firewall_area" = 3 -o "$firewall_area" = 5 -o "$vm_redir" = "已开启" ] && {
 				echo "----------------Redir+DNS---------------------"
@@ -601,6 +575,8 @@ testcommand(){
 						iptables -t nat -L shellcrash_vm --line-numbers
 						iptables -t nat -L shellcrash_vm_dns --line-numbers
 			}
+			echo "----------------本机防火墙---------------------"
+			iptables -L INPUT --line-numbers
 		fi
 		exit;
 	    ;;
@@ -667,7 +643,7 @@ debug(){
 	2)
 		"$CRASHDIR"/start.sh stop
 		"$CRASHDIR"/start.sh bfstart
-		"$COMMAND"
+		$COMMAND
 		rm -rf "$TMPDIR"/CrashCore
 		echo "-----------------------------------------------"
 		exit
@@ -695,8 +671,8 @@ debug(){
 		main_menu
 	;;
 	9)
-		"$CRASHDIR"/start.sh core_check && "$TMPDIR"/CrashCore merge "$TMPDIR"/debug.json -C "$TMPDIR"/jsons && echo -e "\033[32m合并成功！\033[0m"
-		rm -rf "$TMPDIR"/CrashCore
+		. "$CRASHDIR"/libs/core_webget.sh && core_find && "$TMPDIR"/CrashCore merge "$TMPDIR"/debug.json -C "$TMPDIR"/jsons && echo -e "\033[32m合并成功！\033[0m"
+		[ "$TMPDIR" = "$BINDIR" ] && rm -rf "$TMPDIR"/CrashCore
 		main_menu
 	;;
 	*)
@@ -707,7 +683,7 @@ debug(){
 
 #新手引导
 userguide(){
-
+	. "$CRASHDIR"/libs/check_dir_avail.sh
 	forwhat(){
 		echo "-----------------------------------------------"
 		echo -e "\033[30;46m 欢迎使用ShellCrash新手引导！ \033[0m"
@@ -731,7 +707,8 @@ userguide(){
 					redir_mod="Redir模式"
 				fi
 			}
-			setconfig crashcore "meta"
+			[ -z "$crashcore" ] && crashcore=meta
+			setconfig crashcore "$crashcore"
 			setconfig redir_mod "$redir_mod"
 			setconfig dns_mod mix
 			setconfig firewall_area '1'
@@ -796,60 +773,8 @@ userguide(){
 			setconfig BINDIR /tmp/ShellCrash "$CRASHDIR"/configs/command.env
 		}
 	fi
-	#检测及下载根证书
-	openssldir="$(openssl version -d 2>&1 | awk -F '"' '{print $2}')"
-	[ ! -d "$openssldir/certs" ] && openssldir=/etc/ssl
-	if [ -d $openssldir/certs -a ! -f $openssldir/certs/ca-certificates.crt ];then
-		echo "-----------------------------------------------"
-		echo -e "\033[33m当前设备未找到根证书文件\033[0m"
-		echo "-----------------------------------------------"
-		read -p "是否下载并安装根证书？(1/0) > " res
-		[ "$res" = 1 ] && checkupdate && getcrt
-	fi
-	#设置加密DNS
-	if [ -s $openssldir/certs/ca-certificates.crt ];then
-		dns_nameserver='https://dns.alidns.com/dns-query, https://doh.pub/dns-query'
-		dns_fallback='https://cloudflare-dns.com/dns-query, https://dns.google/dns-query, https://doh.opendns.com/dns-query'
-		dns_resolver='https://223.5.5.5/dns-query, 2400:3200::1'
-		setconfig dns_nameserver "'$dns_nameserver'"
-		setconfig dns_fallback "'$dns_fallback'"
-		setconfig dns_resolver "'$dns_resolver'"
-	fi
-	#开启公网访问
-	sethost(){
-		read -p "请输入你的公网IP地址 > " host
-		echo $host | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'
-		if [ -z "$host" ];then
-			echo -e "\033[31m请输入正确的IP地址！\033[0m"
-			sethost
-		fi
-	}
-	if ckcmd systemctl;then
-		echo "-----------------------------------------------"
-		echo -e "\033[32m是否开启公网访问Dashboard面板及socks服务？\033[0m"
-		echo -e "注意当前设备必须有公网IP才能从公网正常访问"
-		echo -e "\033[31m此功能会增加暴露风险请谨慎使用！\033[0m"
-		echo -e "vps设备可能还需要额外在服务商后台开启相关端口"
-		read -p "现在开启？(1/0) > " res
-		if [ "$res" = 1 ];then
-			read -p "请先设置面板访问秘钥 > " secret
-			read -p "请先修改Socks服务端口(1-65535) > " mix_port
-			read -p "请先设置Socks服务密码(账号默认为crash) > " sec
-			[ -z "$sec" ] && authentication=crash:$sec
-			host=$(curl ip.sb  2>/dev/null | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
-			if [ -z "$host" ];then
-				sethost
-			fi
-			public_support=已开启
-			setconfig secret $secret
-			setconfig mix_port $mix_port
-			setconfig host $host
-			setconfig public_support $public_support
-			setconfig authentication "'$authentication'"
-		fi
-	fi
 	#启用推荐的自动任务配置
-	. "$CRASHDIR"/task/task.sh && task_recom
+	. "$CRASHDIR"/menus/5_task.sh && task_recom
 	#小米设备软固化
 	if [ "$systype" = "mi_snapshot" ];then
 		echo "-----------------------------------------------"
@@ -865,12 +790,7 @@ userguide(){
 		echo "-----------------------------------------------"
 		read -p "现在开始导入？(1/0) > " res
 		[ "$res" = 1 ] && inuserguide=1 && {
-			if [ -f "$CRASHDIR"/v2b_api.sh ];then
-				. "$CRASHDIR"/v2b_api.sh
-			else
-				set_core_config
-			fi
-			set_core_config
+			. "$CRASHDIR"/menus/6_core_config.sh && set_core_config
 			inuserguide=""
 		}
 	}
