@@ -1,3 +1,13 @@
 # 本碎片只包含自己认为需要Proxy的服务
 
-DOMAIN-SUFFIX,mypikpak.com
+# 域名类规则（最常用）
+# 精确匹配规则  DOMAIN,example.com
+# 后缀匹配  DOMAIN-SUFFIX,example.com
+# 关键词匹配  DOMAIN-KEYWORD,google
+# 单个IP匹配  IP-CIDR,8.8.8.8/32
+# IP段匹配  IP-CIDR,8.8.8.0/24
+# IPv6匹配  IP-CIDR6,2001:4860:4860::8888/128
+更多规则介绍详见 https://chatgpt.com/c/695e5fd5-297c-8320-bc0d-92a10f16fe1c
+
+# 以下为自定义规则 
+DOMAIN-KEYWORD,mypikpak
