@@ -1,5 +1,4 @@
 # 本碎片只包含自己认为需要Proxy的服务
-
 # 精确匹配规则DOMAIN,example.com
 # 后缀匹配DOMAIN-SUFFIX,example.com
 # 关键词匹配DOMAIN-KEYWORD,google
