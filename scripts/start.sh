@@ -37,10 +37,11 @@ case "$1" in
 start)
     [ -n "$(pidof CrashCore)" ] && $0 stop #禁止多实例
     stop_firewall                          #清理路由策略
+	rm -f "CRASHDIR"/.start_error #移除自启失败标记
     #使用不同方式启动服务
 	if [ "$firewall_area" = "5" ]; then #主旁转发
         . "$CRASHDIR"/starts/fw_start.sh
-    elif [ "$start_old" = "已开启" ]; then
+    elif [ "$start_old" = "ON" ]; then
         start_l
     elif [ -f /etc/rc.common ] && grep -q 'procd' /proc/1/comm; then
         /etc/init.d/shellcrash start
@@ -71,9 +72,10 @@ stop)
     cronset '运行时每'
     cronset '流媒体预解析'
     #多种方式结束进程
-	if [ -f "$TMPDIR/shellcrash.pid" ];then
-		kill -TERM "$(cat "$TMPDIR/shellcrash.pid")"
-		rm -f "$TMPDIR/shellcrash.pid"
+    if [ -f "$TMPDIR/shellcrash.pid" ];then
+        kill -TERM "$(cat "$TMPDIR/shellcrash.pid")"
+        rm -f "$TMPDIR/shellcrash.pid"
+        stop_firewall
     elif [ "$USER" = "root" ] && grep -q 'systemd' /proc/1/comm; then
         systemctl stop shellcrash.service >/dev/null 2>&1
     elif [ -f /etc/rc.common ] && grep -q 'procd' /proc/1/comm; then
@@ -84,9 +86,9 @@ stop)
     elif rc-status -r >/dev/null 2>&1; then
         rc-service shellcrash stop >/dev/null 2>&1
     else
-        stop_firewall #清理路由策略
+        stop_firewall
     fi
-    PID=$(pidof CrashCore) && [ -n "$PID" ] && ckcmd killall && killall CrashCore 2>/dev/null
+    killall CrashCore 2>/dev/null
     #清理缓存目录
     rm -rf "$TMPDIR"/CrashCore
     ;;
@@ -114,8 +116,8 @@ debug)
         else
             sed -i "s/log-level: info/log-level: $2/" "$TMPDIR"/config.yaml
         fi
-        [ "$3" = flash ] && dir=$CRASHDIR || dir=$TMPDIR
-        $COMMAND >${dir}/debug.log 2>&1 &
+        [ "$3" = flash ] && dir="$CRASHDIR" || dir="$TMPDIR"
+        $COMMAND >"$dir"/debug.log 2>&1 &
         sleep 2
         logger "已运行debug模式!如需停止，请使用重启/停止服务功能！" 33
     else

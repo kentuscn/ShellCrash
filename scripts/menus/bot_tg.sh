@@ -155,12 +155,10 @@ download_file(){
 	else
 		send_msg "文件格式不匹配，上传失败！"
 	fi
-	OFFSET=$((OFFSET + 1))
-	continue
 }
 ### --- 具体操作函数 --- ###
 do_start_fw(){
-	[ -z "$redir_mod_bf" ] && redir_mod_bf='Redir模式'
+	[ -z "$redir_mod_bf" ] && redir_mod_bf='Redir'
 	redir_mod=$redir_mod_bf
 	setconfig redir_mod $redir_mod
 	"$CRASHDIR"/start.sh start_firewall
@@ -168,8 +166,8 @@ do_start_fw(){
 }
 do_stop_fw(){
 	redir_mod_bf=$redir_mod
-	redir_mod='纯净模式'
-	setconfig redir_mod $redir_mod
+	firewall_area=4
+	setconfig firewall_area 4
 	"$CRASHDIR"/start.sh stop_firewall
     echo "ShellCrash 已切换到纯净模式！" > "$LOGFILE"
 }
@@ -231,14 +229,21 @@ polling(){
 		OFFSET=$(echo "$UPDATES" | grep -o '"update_id":[0-9]*' | tail -n1 | cut -d: -f2)
 		OFFSET=$((OFFSET + 1))
 		
+		### --- 校验ChatID --- ###
+		CHATID=$(echo "$UPDATES" | grep -o '"id":[0-9]*' | tail -n1 | cut -d: -f2)
+		[ "$CHATID" != "$TG_CHATID" ] && continue
+		
 		### --- 处理按钮事件 --- ###
 		CALLBACK=$(echo "$UPDATES" | grep -o '"data":"[^"]*"' | head -n1 | sed 's/.*:"//;s/"$//')
 		FILE_ID=$(echo "$UPDATES" | sed 's/"callback_query".*//g' | grep -o '"file_id":"[^"]*"' | head -n1 | sed 's/.*:"//;s/"$//')
 		
-		[ -n "$FILE_ID" ] && download_file
+		[ -n "$FILE_ID" ] && {
+			download_file
+			continue
+		}
 		[ -n "$CALLBACK" ] && case "$CALLBACK" in
 			"start_redir")
-				if [ "$redir_mod" = '纯净模式' ];then
+				if [ "$firewall_area" = 4 ];then
 					do_start_fw
 					send_msg  "已切换到$redir_mod_bf！"
 				else
@@ -248,7 +253,7 @@ polling(){
 				continue
 			;;
 			"stop_redir")
-				if [ "$redir_mod" != '纯净模式' ];then
+				if [ "$firewall_area" != 4 ];then
 					do_stop_fw
 					send_msg  "已切换到纯净模式"
 				else

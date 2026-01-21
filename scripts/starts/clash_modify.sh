@@ -4,9 +4,9 @@
 #修饰clash配置文件
 modify_yaml() {
     ##########需要变更的配置###########
-    [ "$ipv6_dns" != "未开启" ] && dns_v6='true' || dns_v6='false'
+    [ "$ipv6_dns" != "OFF" ] && dns_v6='true' || dns_v6='false'
     external="external-controller: 0.0.0.0:$db_port"
-    if [ "$redir_mod" = "混合模式" -o "$redir_mod" = "Tun模式" ]; then
+    if [ "$redir_mod" = "Mix" -o "$redir_mod" = "Tun" ]; then
         [ "$crashcore" = 'meta' ] && tun_meta=', device: utun, auto-route: false, auto-detect-interface: false'
         tun="tun: {enable: true, stack: system$tun_meta}"
     else
@@ -15,7 +15,16 @@ modify_yaml() {
     exper='experimental: {ignore-resolve-fail: true, interface-name: en0}'
     #Meta内核专属配置
     [ "$crashcore" = 'meta' ] && {
-        [ "$redir_mod" != "纯净模式" ] && [ -z "$(grep 'PROCESS' "$CRASHDIR"/yamls/*.yaml)" ] && find_process='find-process-mode: "off"'
+        [ -z "$(grep 'PROCESS' "$CRASHDIR"/yamls/*.yaml)" ] && find_process='find-process-mode: "off"'
+		#ecs优化
+		[ "$ecs_subnet" = ON ] && {
+			. "$CRASHDIR"/libs/get_ecsip.sh
+			if [ -n "$ecs_address" ];then
+				dns_fallback=$(echo "$dns_fallback, " | sed "s|, |#ecs-override=true\&ecs=$ecs_address, |g" | sed 's|, $||')
+			else
+				logger "自动获取ecs网段失败！"
+			fi
+		}
     }
     #dns配置
     [ -z "$(cat "$CRASHDIR"/yamls/user.yaml 2>/dev/null | grep '^dns:')" ] && {
@@ -27,6 +36,7 @@ dns:
   use-hosts: true
   ipv6: $dns_v6
   default-nameserver: [ $dns_resolver ]
+  direct-nameserver: [ $dns_nameserver ]
   enhanced-mode: fake-ip
   fake-ip-range: 28.0.0.0/8
   fake-ip-range6: fc00::/16
@@ -55,8 +65,8 @@ EOF
         fi
     }
     #域名嗅探配置
-    [ "$sniffer" = "已启用" ] && [ "$crashcore" = "meta" ] && sniffer_set="sniffer: {enable: true, parse-pure-ip: true, skip-domain: [Mijia Cloud], sniff: {http: {ports: [80, 8080-8880], override-destination: true}, tls: {ports: [443, 8443]}, quic: {ports: [443, 8443]}}}"
-    [ "$crashcore" = "clashpre" ] && [ "$dns_mod" = "redir_host" -o "$sniffer" = "已启用" ] && exper="experimental: {ignore-resolve-fail: true, interface-name: en0,sniff-tls-sni: true}"
+    [ "$sniffer" = "ON" ] && [ "$crashcore" = "meta" ] && sniffer_set="sniffer: {enable: true, parse-pure-ip: true, skip-domain: [Mijia Cloud], sniff: {http: {ports: [80, 8080-8880], override-destination: true}, tls: {ports: [443, 8443]}, quic: {ports: [443, 8443]}}}"
+    [ "$crashcore" = "clashpre" ] && [ "$dns_mod" = "redir_host" -o "$sniffer" = "ON" ] && exper="experimental: {ignore-resolve-fail: true, interface-name: en0,sniff-tls-sni: true}"
     #生成set.yaml
     cat >"$TMPDIR"/set.yaml <<EOF
 mixed-port: $mix_port
@@ -89,19 +99,18 @@ hosts:
 EOF
         if [ "$crashcore" = "meta" ]; then
             echo "  'services.googleapis.cn': services.googleapis.com" >>"$TMPDIR"/hosts.yaml
-        else
-            #加载本机hosts
-            sys_hosts=/etc/hosts
-            [ -f /data/etc/custom_hosts ] && sys_hosts=/data/etc/custom_hosts
-            while read line; do
-                [ -n "$(echo "$line" | grep -oE "([0-9]{1,3}[\.]){3}")" ] &&
-                    [ -z "$(echo "$line" | grep -oE '^#')" ] &&
-                    hosts_ip=$(echo $line | awk '{print $1}') &&
-                    hosts_domain=$(echo $line | awk '{print $2}') &&
-                    [ -z "$(cat "$TMPDIR"/hosts.yaml | grep -oE "$hosts_domain")" ] &&
-                    echo "  '$hosts_domain': $hosts_ip" >>"$TMPDIR"/hosts.yaml
-            done <$sys_hosts
         fi
+		#加载本机hosts
+		sys_hosts=/etc/hosts
+		[ -f /data/etc/custom_hosts ] && sys_hosts='/etc/hosts /data/etc/custom_hosts'
+		cat $sys_hosts | while read line; do
+			[ -n "$(echo "$line" | grep -oE "([0-9]{1,3}[\.]){3}")" ] &&
+				[ -z "$(echo "$line" | grep -oE '^#')" ] &&
+				hosts_ip=$(echo $line | awk '{print $1}') &&
+				hosts_domain=$(echo $line | awk '{print $2}') &&
+				[ -z "$(cat "$TMPDIR"/hosts.yaml | grep -oE "$hosts_domain")" ] &&
+				echo "  '$hosts_domain': $hosts_ip" >>"$TMPDIR"/hosts.yaml
+		done
     fi
     #分割配置文件
     yaml_char='proxies proxy-groups proxy-providers rules rule-providers sub-rules listeners'
@@ -109,7 +118,7 @@ EOF
         sed -n "/^$char:/,/^[a-z]/ { /^[a-z]/d; p; }" $core_config >"$TMPDIR"/${char}.yaml
     done
     #跳过本地tls证书验证
-    [ "$skip_cert" != "未开启" ] && sed -i 's/skip-cert-verify: false/skip-cert-verify: true/' "$TMPDIR"/proxies.yaml ||
+    [ "$skip_cert" != "OFF" ] && sed -i 's/skip-cert-verify: false/skip-cert-verify: true/' "$TMPDIR"/proxies.yaml ||
         sed -i 's/skip-cert-verify: true/skip-cert-verify: false/' "$TMPDIR"/proxies.yaml
     #插入自定义策略组
     sed -i "/#自定义策略组开始/,/#自定义策略组结束/d" "$TMPDIR"/proxy-groups.yaml
@@ -169,7 +178,7 @@ EOF
 	}
     #节点绕过功能支持
     sed -i "/#节点绕过/d" "$TMPDIR"/rules.yaml
-    [ "$proxies_bypass" = "已启用" ] && {
+    [ "$proxies_bypass" = "ON" ] && {
         cat "$TMPDIR"/proxies.yaml | sed '/^proxy-/,$d' | sed '/^rule-/,$d' | grep -v '^\s*#' | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | awk '!a[$0]++' | sed 's/^/\ -\ IP-CIDR,/g' | sed 's|$|/32,DIRECT,no-resolve #节点绕过|g' >>"$TMPDIR"/proxies_bypass
         cat "$TMPDIR"/proxies.yaml | sed '/^proxy-/,$d' | sed '/^rule-/,$d' | grep -v '^\s*#' | grep -vE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -oE '[a-zA-Z0-9][-a-zA-Z0-9]{0,62}(\.[a-zA-Z0-9][-a-zA-Z0-9]{0,62})+\.?' | awk '!a[$0]++' | sed 's/^/\ -\ DOMAIN,/g' | sed 's/$/,DIRECT #节点绕过/g' >>"$TMPDIR"/proxies_bypass
         cat "$TMPDIR"/rules.yaml >>"$TMPDIR"/proxies_bypass

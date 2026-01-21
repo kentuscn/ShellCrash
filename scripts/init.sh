@@ -101,8 +101,10 @@ grep -q 'firewall_mod' "$CRASHDIR/configs/ShellClash.cfg" 2>/dev/null || {
 }
 #设置更新地址
 [ -n "$url" ] && setconfig update_url $url
+#设置语言
+[ -n "$language" ] && echo "$language" > "$CRASHDIR/configs/i18n.cfg"
 #设置环境变量
-[ -w /opt/etc/profile ] && profile=/opt/etc/profile
+[ -w /opt/etc/profile ] && [ "$systype" = "Padavan" ] && profile=/opt/etc/profile
 [ -w /jffs/configs/profile.add ] && profile=/jffs/configs/profile.add
 [ -z "$profile" ] && profile=/etc/profile
 if [ -n "$profile" ]; then
@@ -163,7 +165,7 @@ fi
 	setconfig firewall_area '1'
 	setconfig firewall_mod 'nftables'
 	setconfig release_type 'master'
-	setconfig start_old '未开启'
+	setconfig start_old 'OFF'
 	echo "$CRASHDIR/menu.sh" >> /etc/profile
 	cat > /usr/bin/crash <<'EOF'
 #!/bin/sh
@@ -222,10 +224,13 @@ sed -i "s/clash_v/core_v/g" "$CFG_PATH"
 sed -i "s/clash.meta/meta/g" "$CFG_PATH"
 sed -i "s/ShellClash/ShellCrash/g" "$CFG_PATH"
 sed -i "s/cpucore=armv8/cpucore=arm64/g" "$CFG_PATH"
-sed -i "s/redir_mod=Nft基础/redir_mod=Redir模式/g" "$CFG_PATH"
-sed -i "s/redir_mod=Nft混合/redir_mod=Tproxy模式/g" "$CFG_PATH"
-sed -i "s/redir_mod=Tproxy混合/redir_mod=Tproxy模式/g" "$CFG_PATH"
+sed -i "s/redir_mod=Redir模式/redir_mod=Redir/g" "$CFG_PATH"
+sed -i "s/redir_mod=Tproxy模式/redir_mod=Tproxy/g" "$CFG_PATH"
+sed -i "s/redir_mod=Tun模式/redir_mod=Tun/g" "$CFG_PATH"
+sed -i "s/redir_mod=混合模式/redir_mod=Mix/g" "$CFG_PATH"
 sed -i "s/redir_mod=纯净模式/firewall_area=4/g" "$CFG_PATH"
-sed -i "s/hosts_opt=未启用/hosts_opt=OFF/g" "$CFG_PATH"
+#变量统一使用ON/OFF
+sed -i 's/=\(已启用\|已开启\)$/=ON/'  "$CFG_PATH"
+sed -i 's/=\(未启用\|未开启\)$/=OFF/' "$CFG_PATH"
 
-echo -e "\033[32m脚本初始化完成,请输入\033[30;47m $my_alias \033[0;33m命令开始使用！\033[0m"
+printf '\033[32m脚本初始化完成,请输入\033[30;47m %s \033[0;33m命令开始使用！\033[0m\n' "$my_alias"

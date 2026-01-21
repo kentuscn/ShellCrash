@@ -6,6 +6,9 @@
 . "$CRASHDIR"/libs/get_config.sh
 [ -z "$BINDIR" -o -z "$TMPDIR" -o -z "$COMMAND" ] && . "$CRASHDIR"/init.sh >/dev/null 2>&1
 [ ! -f "$TMPDIR" ] && mkdir -p "$TMPDIR"
+
+#当上次启动失败时终止自启动
+[ -f "CRASHDIR"/.start_error ] && exit 1
 #加载工具
 . "$CRASHDIR"/libs/check_cmd.sh
 . "$CRASHDIR"/libs/check_target.sh
@@ -15,9 +18,10 @@
 . "$CRASHDIR"/starts/check_geo.sh
 . "$CRASHDIR"/starts/check_core.sh
 #缺省值
-[ -z "$redir_mod" ] && [ "$USER" = "root" -o "$USER" = "admin" ] && redir_mod='Redir模式'
+[ -z "$redir_mod" ] && [ "$USER" = "root" -o "$USER" = "admin" ] && redir_mod='Redir'
 [ -z "$dns_mod" ] && dns_mod='redir_host'
 [ -z "$redir_mod" ] && firewall_area='4'
+routing_mark=$((fwmark + 2))
 
 makehtml() { #生成面板跳转文件
     cat >"$BINDIR"/ui/index.html <<EOF
@@ -69,9 +73,9 @@ EOF
     [ "$?" = 0 ] && rm -rf "$TMPDIR"/shellcrash_pac || mv -f "$TMPDIR"/shellcrash_pac "$BINDIR"/ui/pac
 }
 
-routing_mark=$((fwmark + 2))
+
 #检测网络连接
-[ "$network_check" != "已禁用" ] && [ ! -f "$TMPDIR"/crash_start_time ] && ckcmd ping && . "$CRASHDIR"/starts/check_network.sh && check_network
+[ "$network_check" != "OFF" ] && [ ! -f "$TMPDIR"/crash_start_time ] && ckcmd ping && . "$CRASHDIR"/starts/check_network.sh && check_network
 [ ! -d "$BINDIR"/ui ] && mkdir -p "$BINDIR"/ui
 [ -z "$crashcore" ] && crashcore=meta
 #执行条件任务
@@ -99,7 +103,7 @@ if echo "$crashcore" | grep -q 'singbox'; then
 	if [ "$disoverride" != "1" ];then
 		. "$CRASHDIR"/starts/singbox_modify.sh && modify_json
 	else
-		ln -sf "$core_config" "$TMPDIR"/config.json
+		ln -sf "$core_config" "$TMPDIR"/jsons/config.json
 	fi
 else
 	. "$CRASHDIR"/starts/clash_check.sh && clash_check
@@ -110,11 +114,11 @@ else
 	fi
 fi
 #检查下载cnip绕过相关文件
-[ "$cn_ip_route" = "已开启" ] && [ "$dns_mod" != "fake-ip" ] && {
+[ "$cn_ip_route" = "ON" ] && [ "$dns_mod" != "fake-ip" ] && {
 	[ "$firewall_mod" = nftables ] || ckcmd ipset && {
 		. "$CRASHDIR"/starts/check_cnip.sh
 		ck_cn_ipv4
-		[ "$ipv6_redir" = "已开启" ] && ck_cn_ipv6
+		[ "$ipv6_redir" = "ON" ] && ck_cn_ipv6
 	}
 }
 #添加shellcrash用户
@@ -131,7 +135,7 @@ fi
 	fi
 }
 #加载系统内核组件
-[ "$redir_mod" = "Tun模式" -o "$redir_mod" = "混合模式" ] && ckcmd modprobe && modprobe tun 2>/dev/null
+[ "$redir_mod" = "Tun" -o "$redir_mod" = "Mix" ] && ckcmd modprobe && modprobe tun 2>/dev/null
 #清理debug日志
 rm -rf /tmp/ShellCrash/debug.log
 rm -rf "$CRASHDIR"/debug.log
