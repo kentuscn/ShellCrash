@@ -29,15 +29,14 @@ content_line() {
            currentLine = ""
            wordBuffer = ""
            lastColor = ""
+           savedColor = ""
            ESC = sprintf("%c", 27)
        }
 
        {
            n = split($0, chars, "")
-
            for (i = 1; i <= n; i++) {
                r = chars[i]
-
                if (r == ESC && i+1 <= n && chars[i+1] == "[") {
                    ansiSeq = ""
                    for (j = i; j <= n; j++) {
@@ -53,10 +52,7 @@ content_line() {
                }
 
                charWidth = 1
-
-               if (r <= "\177") {
-                   charWidth = 1
-               }
+               if (r <= "\177") { charWidth = 1 }
                else if (r >= "\340" && r <= "\357" && i+2 <= n) {
                    r = chars[i] chars[i+1] chars[i+2]
                    i += 2
@@ -67,59 +63,61 @@ content_line() {
                    i += 1
                    charWidth = 1
                }
-               else {
-                   charWidth = 1
-               }
 
                if (r == " " || charWidth == 2) {
                    if (currentDisplayWidth + wordWidth + charWidth > textWidth) {
                        printf " %s\033[0m\033[%dG||\n", currentLine, table_width
-                       currentLine = lastColor wordBuffer
+                       currentLine = savedColor wordBuffer
                        currentDisplayWidth = wordWidth
                        wordBuffer = r
                        wordWidth = charWidth
+                       savedColor = lastColor
                    } else {
                        currentLine = currentLine wordBuffer r
                        currentDisplayWidth += wordWidth + charWidth
                        wordBuffer = ""
                        wordWidth = 0
+                       savedColor = lastColor
                    }
                } else {
                    wordBuffer = wordBuffer r
                    wordWidth += charWidth
-
                    if (wordWidth > textWidth) {
                        printf " %s%s\033[0m\033[%dG||\n", currentLine, wordBuffer, table_width
-                       currentLine = lastColor
+                       currentLine = savedColor
                        currentDisplayWidth = 0
                        wordBuffer = ""
                        wordWidth = 0
+                       savedColor = lastColor
                    }
                }
            }
-       }
 
-       END {
            if (wordWidth > 0) {
                if (currentDisplayWidth + wordWidth > textWidth) {
                    printf " %s\033[0m\033[%dG||\n", currentLine, table_width
-                   currentLine = lastColor wordBuffer
+                   currentLine = savedColor wordBuffer
                } else {
                    currentLine = currentLine wordBuffer
                }
            }
 
-           cleanText = currentLine
-           gsub(/\033\[[0-9;]*m/, "", cleanText)
-           gsub(/^[ \t]+|[ \t]+$/, "", cleanText)
+           printf " %s\033[0m\033[%dG||\n", currentLine, table_width
 
-           if (cleanText != "") {
-               printf " %s\033[0m\033[%dG||\n", currentLine, table_width
-           }
+           currentLine = lastColor
+           currentDisplayWidth = 0
+           wordBuffer = ""
+           wordWidth = 0
+           savedColor = lastColor
        }
+       END {}
        '
 }
-
+# function for right side text
+# color sould be disabled
+content_right() {
+	content_line "$(printf "%$((${TABLE_WIDTH:-60} - 3))s" "$1")"
+}
 # function to print sub content lines
 # for printing accompanying instructions
 sub_content_line() {
@@ -152,3 +150,5 @@ separator_line() {
 line_break() {
     printf "\n\n"
 }
+
+

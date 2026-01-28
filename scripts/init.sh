@@ -100,7 +100,8 @@ grep -q 'firewall_mod' "$CRASHDIR/configs/ShellClash.cfg" 2>/dev/null || {
     setconfig firewall_mod $firewall_mod
 }
 #设置更新地址
-[ -n "$url" ] && setconfig update_url $url
+[ -n "$url" ] && setconfig update_url "$url"
+[ -n "$release_type" ] && setconfig release_type "$release_type"
 #设置语言
 [ -n "$language" ] && echo "$language" > "$CRASHDIR/configs/i18n.cfg"
 #设置环境变量
@@ -132,7 +133,7 @@ if [ "$systype" = "mi_snapshot" -o "$systype" = "ng_snapshot" ]; then
     chmod 755 "$CRASHDIR"/starts/snapshot_init.sh
 	if [ "$systype" = "mi_snapshot" ];then
 		path="/data/shellcrash_init.sh"
-		setconfig CRASHDIR "$CRASHDIR" "$CRASHDIR"/starts/snapshot_init.sh
+		sed -i "s#^CRASHDIR=.*#CRASHDIR=$CRASHDIR#" "$CRASHDIR"/starts/snapshot_init.sh
 		mv -f "$CRASHDIR"/starts/snapshot_init.sh "$path"
 		[ ! -f /data/auto_start.sh ] && echo '#用于自定义需要开机启动的功能或者命令，会在开机后自动运行' > /data/auto_start.sh
 	else
@@ -215,7 +216,7 @@ sed -i '/shellclash/d' /etc/group
 rm -rf /etc/init.d/clash
 rm -rf "$CRASHDIR"/rules
 [ "$systype" = "mi_snapshot" -a "$CRASHDIR" != '/data/clash' ] && rm -rf /data/clash
-for file in webget.sh misnap_init.sh core.new; do
+for file in webget.sh misnap_init.sh core.new configs/ShellCrash.cfg.bak; do
     rm -f "$CRASHDIR/$file"
 done
 #旧版变量改名
