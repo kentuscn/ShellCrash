@@ -313,8 +313,8 @@ task_manager() {
         separator_line "="
         # 抽取并生成临时列表
         croncmd -l >"$TMPDIR"/task_cronlist
-        cat "$TMPDIR"/task_cronlist "$CRASHDIR"/task/running 2>/dev/null | sort -u | grep -oE "task/task.sh .*" | awk -F ' ' '{print $2" "$3}' >"$TMPDIR"/task_list
-        cat "$CRASHDIR"/task/bfstart "$CRASHDIR"/task/afstart "$CRASHDIR"/task/affirewall 2>/dev/null | awk -F ' ' '{print $2" "$3}' >>"$TMPDIR"/task_list
+        cat "$TMPDIR"/task_cronlist "$CRASHDIR"/task/running 2>/dev/null | sort -u | grep -oE "task/task.sh .*" | cut -d ' ' -f 2- >"$TMPDIR"/task_list
+        cat "$CRASHDIR"/task/bfstart "$CRASHDIR"/task/afstart "$CRASHDIR"/task/affirewall 2>/dev/null | cut -d ' ' -f 2- >>"$TMPDIR"/task_list
         cat "$TMPDIR"/task_cronlist 2>/dev/null | sort -u | grep -oE " #.*" | grep -v "守护" | awk -F '#' '{print "0 旧版任务-"$2}' >>"$TMPDIR"/task_list
         sed -i '/^ *$/d' "$TMPDIR"/task_list
         rm -rf "$TMPDIR"/task_cronlist
@@ -439,15 +439,15 @@ task_manager() {
 
 # 任务推荐
 task_recom() {
-    line_break
-    separator_line "="
-    content_line "\033[36m$TASK_RECOM_TITLE\033[0m"
-	separator_line "-"
-    content_line "$TASK_RECOM_ITEM_1"
-    content_line "$TASK_RECOM_ITEM_2"
-    content_line "$TASK_RECOM_ITEM_3"
-    separator_line "="
-    read -r -p "$COMMON_INPUT_R" res
+    comp_box "\033[36m$TASK_RECOM_TITLE\033[0m" \
+        "" \
+        "$TASK_RECOM_ITEM_1" \
+        "$TASK_RECOM_ITEM_2" \
+        "$TASK_RECOM_ITEM_3"
+
+    btm_box "1) 是" \
+        "0) 否"
+    read -r -p "$COMMON_INPUT>" res
 
     [ "$res" = 1 ] && {
         line_break

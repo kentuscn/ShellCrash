@@ -42,16 +42,23 @@ btm_box() {
     separator_line "="
 }
 
-list_box () {
-	i=1
-	printf '%s\n' "$1" | while IFS= read -r f; do
-		content_line "$i) $f$2"
-		i=$(( i + 1 ))
-	done
+list_box() {
+    i=1
+    printf '%s\n' "$1" | while IFS= read -r f; do
+        content_line "$i) $f$2"
+        i=$((i + 1))
+    done
+}
+
+common_success() {
+    msg_alert "\033[32m$COMMON_SUCCESS\033[0m"
+}
+
+common_failed() {
+    msg_alert "\033[32m$COMMON_FAILED\033[0m"
 }
 
 # =================================================
-
 common_back() {
     content_line "0) $COMMON_BACK"
     separator_line "="
@@ -76,11 +83,5 @@ error_cancel() {
 cancel_back() {
     separator_line "-"
     content_line "$COMMON_CANCEL"
-    sleep 1
-}
-
-common_success() {
-    separator_line "-"
-    content_line "\033[32m$COMMON_SUCCESS\033[0m"
     sleep 1
 }
