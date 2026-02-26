@@ -13,9 +13,10 @@ forwhat() {
             "\033[33m$UG_CHOOSE_ENV\033[0m" \
             "\033[0m$UG_TIP_CONFIG\033[0m"
 
-        btm_box "1) \033[32m$UG_OPTION_1\033[0m" \
-            "2) \033[36m$UG_OPTION_2\033[0m"
-        [ -s "$CRASHDIR"/configs.tar.gz ] && content_line " 3 \033[33m$UG_OPTION_3\033[0m"
+        content_line "1) \033[32m$UG_OPTION_1\033[0m"
+        content_line "2) \033[36m$UG_OPTION_2\033[0m"
+        [ -s "$CRASHDIR"/configs.tar.gz ] && content_line "3) \033[33m$UG_OPTION_3\033[0m"
+        separator_line "="
         read -r -p "$COMMON_INPUT> " num
         case "$num" in
         "" | 1)
@@ -75,12 +76,12 @@ forwhat() {
             ;;
         3)
             tar -zxf "$CRASHDIR"/configs.tar.gz -C "$CRASHDIR"/configs
-            content_line "\033[32m$UG_RESTORE_OK\033[0m"
+            msg_alert "\033[32m$UG_RESTORE_OK\033[0m"
+            line_break
             exit 0
             ;;
         *)
             errornum
-            sleep 1
             ;;
         esac
     done
@@ -98,7 +99,7 @@ userguide() {
         read -r -p "$COMMON_INPUT_R" res
         [ "$res" = 1 ] && {
             BINDIR=/tmp/ShellCrash
-            setconfig BINDIR /tmp/ShellCrash "$CRASHDIR"/configs/command.env
+            sed -i "s#BINDIR=.*#BINDIR=$BINDIR" "$CRASHDIR"/configs/command.env
         }
     fi
 
@@ -107,9 +108,12 @@ userguide() {
 
     # 提示导入订阅或者配置文件
     if [ ! -s "$CRASHDIR"/yamls/config.yaml ] && [ ! -s "$CRASHDIR"/jsons/config.json ]; then
-        comp_box "\033[32m$UG_IMPORT_CONFIG\033[0m" \
-            "\033[0m$UG_CONFIG_TIP\033[0m"
-        read -r -p "$UG_CONFIG_RES(1/0)> " res
+        comp_box "\033[0m$UG_IMPORT_CONFIG\033[0m" \
+            "\033[32m$UG_CONFIG_TIP\033[0m" \
+            "$UG_CONFIG_RES"
+        btm_box "1) 立即导入" \
+            "0) 暂不导入"
+        read -r -p "$COMMON_INPUT> " res
         [ "$res" = 1 ] && inuserguide=1 && {
             . "$CRASHDIR"/menus/6_core_config.sh && set_core_config
             inuserguide=""

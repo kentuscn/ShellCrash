@@ -125,22 +125,11 @@ ckstatus() {
 		userguide=1
 		. "$CRASHDIR"/menus/userguide.sh && userguide
 		setconfig userguide 1
+		. "$CRASHDIR"/configs/ShellCrash.cfg
 	fi
 
 	# 检查执行权限
 	[ ! -x "$CRASHDIR"/start.sh ] && chmod +x "$CRASHDIR"/start.sh
-
-	line_break
-	separator_line "="
-	content_line "\033[30;43m$MENU_WELCOME\033[0m"
-	content_line "Ver: $versionsh_l"
-	content_line "$MENU_TG_CHANNEL\033[36;4mhttps://t.me/ShellClash\033[0m"
-	separator_line "-"
-	content_line "$corename$run\t  $auto"
-	if [ -n "$PID" ]; then
-		content_line "$MENU_MEM_USED\033[44m$VmRSS\033[0m\t  $MENU_RUNNING_TIME\033[46;30m$day\033[44;37m$time\033[0m"
-	fi
-	separator_line "="
 
 	# 检查/tmp内核文件
 	for file in $(ls /tmp | grep -v [/$] | grep -v ' ' | grep -Ev ".*(zip|7z|tar)$" | grep -iE 'CrashCore|^clash$|^clash-linux.*|^mihomo.*|^sing.*box'); do
@@ -167,7 +156,7 @@ ckstatus() {
 	# 检查/tmp配置文件
 	for file in $(ls /tmp | grep -v [/$] | grep -v ' ' | grep -iE 'config.yaml$|config.yml$|config.json$'); do
 		tmp_file=/tmp/$file
-		comp_box "$MENU_TMP_CFG_FOUND \033[36m/tmp/$file\033[0m" \
+		comp_box "$MENU_TMP_CFG_FOUND\033[36m/tmp/$file\033[0m" \
 			"$MENU_TMP_CFG_ASK"
 		btm_box "1) 立即加载" \
 			"0) 暂不加载"
@@ -191,23 +180,32 @@ ckstatus() {
 		read -p "$COMMON_INPUT> " res
 		[ "$res" = 1 ] && unset disoverride && setconfig disoverride
 	}
+
+	top_box "\033[30;43m$MENU_WELCOME\033[0m\t\t  Ver: $versionsh_l" \
+		"$MENU_TG_CHANNEL\033[36;4mhttps://t.me/ShellClash\033[0m"
+	separator_line "-"
+	content_line "$corename$run\t  $auto"
+	if [ -n "$PID" ]; then
+		content_line "$MENU_MEM_USED\033[44m$VmRSS\033[0m\t  $MENU_RUNNING_TIME\033[46;30m$day\033[44;37m$time\033[0m"
+	fi
+	separator_line "="
 }
 
 main_menu() {
 	while true; do
 		ckstatus
 
-		content_line "1) \033[32m$MENU_MAIN_1\033[0m"
-		content_line "2) \033[36m$MENU_MAIN_2\033[0m"
-		content_line "3) \033[31m$MENU_MAIN_3\033[0m"
-		content_line "4) \033[33m$MENU_MAIN_4\033[0m"
-		content_line "5) \033[32m$MENU_MAIN_5\033[0m"
-		content_line "6) \033[36m$MENU_MAIN_6\033[0m"
-		content_line "7) \033[33m$MENU_MAIN_7\033[0m"
-		content_line "8) $MENU_MAIN_8"
-		content_line "9) \033[32m$MENU_MAIN_9\033[0m"
-		content_line "0) $MENU_MAIN_0"
-		separator_line "="
+		btm_box "1) \033[32m$MENU_MAIN_1\033[0m"\
+		"2) \033[36m$MENU_MAIN_2\033[0m"\
+		"3) \033[31m$MENU_MAIN_3\033[0m"\
+		"4) \033[33m$MENU_MAIN_4\033[0m"\
+		"5) \033[32m$MENU_MAIN_5\033[0m"\
+		"6) \033[36m$MENU_MAIN_6\033[0m"\
+		"7) \033[33m$MENU_MAIN_7\033[0m"\
+		"8) $MENU_MAIN_8"\
+		"9) \033[32m$MENU_MAIN_9\033[0m"\
+		""\
+		"0) $MENU_MAIN_0"
 		read -r -p "$MENU_MAIN_PROMPT" num
 
 		case "$num" in
@@ -311,8 +309,9 @@ case "$1" in
 		while read line; do
 			echo -e "$MENU_ERROR_FOUND\033[33;4m$line\033[0m"
 			grep -A 1 -B 3 "$line" "$TMPDIR"/debug_sh.log
-			echo "==========================================================="
+			echo
 		done <"$TMPDIR"/sh_bug
+		echo "==========================================================="
 		rm -rf "$TMPDIR"/sh_bug
 		comp_box "\033[32m$MENU_TEST_DONE_FAIL\033[0m" \
 			"$MENU_TEST_LOG_HINT\033[36m$TMPDIR/debug_sh.log\033[0m"

@@ -22,26 +22,24 @@ upgrade() {
         fi
         [ -z "$core_v" ] && core_v=$crashcore
         core_v_new=$(eval echo \$"$crashcore"_v)
-
-        comp_box "\033[30;47m更新与支持\033[0m" \
+        top_box "\033[30;47m更新与支持\033[0m" \
             "" \
             "当前目录(\033[32m$CRASHDIR\033[0m)剩余空间：\033[36m$(dir_avail "$CRASHDIR" -h)\033[0m"
         [ "$(dir_avail "$CRASHDIR")" -le 5120 ] && [ "$CRASHDIR" = "$BINDIR" ] && {
             content_line "\033[33m当前目录剩余空间较低，建议开启小闪存模式！\033[0m"
         }
-        content_line "1) 更新\033[36m管理脚本\t\033[33m$versionsh_l\033[0m > \033[32m$version_new \033[36m$release_type\033[0m"
-        content_line "2) 切换/更新\033[33m内核文件\t\033[33m$core_v\033[0m > \033[32m$core_v_new\033[0m"
-        content_line "3) 安装/更新本地\033[32m数据库文件\033[0m"
-        content_line "4) 安装/更新本地\033[35mDashboard面板\033[0m"
-        content_line "5) 安装/更新本地\033[33m根证书文件\033[0m"
-        content_line "6) \033[32mPAC\033[0m自动代理查看"
-        content_line "7) 切换\033[36m安装源及版本分支\033[0m"
-        content_line "8) \033[31m卸载ShellCrash\033[0m"
-        content_line "9) \033[36m感谢列表！\033[0m"
-        content_line ""
-        content_line "0) 返回上级菜单"
         separator_line "="
-
+        btm_box "1) 更新\033[36m管理脚本\t\033[33m$versionsh_l\033[0m > \033[32m$version_new \033[36m$release_type\033[0m" \
+            "2) 切换/更新\033[33m内核文件\t\033[33m$core_v\033[0m > \033[32m$core_v_new\033[0m" \
+            "3) 安装/更新本地\033[32m数据库文件\033[0m" \
+            "4) 安装/更新本地\033[35mDashboard面板\033[0m" \
+            "5) 安装/更新本地\033[33m根证书文件\033[0m" \
+            "6) \033[32mPAC\033[0m自动代理查看" \
+            "7) 切换\033[36m安装源及版本分支\033[0m" \
+            "8) \033[31m卸载ShellCrash\033[0m" \
+            "9) \033[36m感谢列表！\033[0m" \
+            "" \
+            "0) 返回上级菜单"
         read -r -p "请输入对应数字> " num
         case "$num" in
         "" | 0)
@@ -74,39 +72,30 @@ upgrade() {
             ;;
         9)
             comp_box "感谢以下项目及其开发者们的无私奉献！"
-
-            content_line "\033[32mClash              \033[0m开发：\033[36mDreamacro\033[0m"
-            content_line ""
-
-            content_line "\033[32msing-box           \033[0m开发：\033[36mSagerNet\033[0m"
-            content_line "项目地址：\033[32mhttps://github.com/SagerNet/sing-box\033[0m"
-            content_line ""
-
-            content_line "\033[32mMetaCubeX          \033[0m开发：\033[36mMetaCubeX\033[0m"
-            content_line "项目地址：\033[32mhttps://github.com/MetaCubeX\033[0m"
-            content_line ""
-
-            content_line "\033[32mYACD面板           \033[0m开发：\033[36mhaishanh\033[0m"
-            content_line "项目地址：\033[32mhttps://github.com/haishanh/yacd\033[0m"
-            content_line ""
-
-            content_line "\033[32mZashboard          \033[0m开发：\033[36mZephyruso\033[0m"
-            content_line "项目地址：\033[32mhttps://github.com/Zephyruso/zashboard\033[0m"
-            content_line ""
-
-            content_line "\033[32mSubconverter       \033[0m开发：\033[36mtindy2013\033[0m"
-            content_line "项目地址：\033[32mhttps://github.com/tindy2013/subconverter\033[0m"
-            content_line ""
-
-            content_line "\033[32msing-box-reF1nd    \033[0m开发：\033[36mreF1nd\033[0m"
-            content_line "项目地址：\033[32mhttps://github.com/reF1nd/sing-box\033[0m"
-            content_line ""
-
-            content_line "\033[32mDustinWin          \033[0m开发：\033[36mDustinWin\033[0m"
-            content_line "开发者地址：\033[32mhttps://github.com/DustinWin\033[0m"
-            content_line ""
-
-            comp_box "特别感谢：\033[36m所有帮助及赞助过此项目的同仁们！\033[0m"
+            btm_box "\033[32mClash              \033[0m开发：\033[36mDreamacro\033[0m" \
+                "" \
+                "\033[32msing-box           \033[0m开发：\033[36mSagerNet\033[0m" \
+                "项目地址：\033[32mhttps://github.com/SagerNet/sing-box\033[0m" \
+                "" \
+                "\033[32mMetaCubeX          \033[0m开发：\033[36mMetaCubeX\033[0m" \
+                "项目地址：\033[32mhttps://github.com/MetaCubeX\033[0m" \
+                "" \
+                "\033[32mYACD面板           \033[0m开发：\033[36mhaishanh\033[0m" \
+                "项目地址：\033[32mhttps://github.com/haishanh/yacd\033[0m" \
+                "" \
+                "\033[32mZashboard          \033[0m开发：\033[36mZephyruso\033[0m" \
+                "项目地址：\033[32mhttps://github.com/Zephyruso/zashboard\033[0m" \
+                "" \
+                "\033[32mSubconverter       \033[0m开发：\033[36mtindy2013\033[0m" \
+                "项目地址：\033[32mhttps://github.com/tindy2013/subconverter\033[0m" \
+                "" \
+                "\033[32msing-box-reF1nd    \033[0m开发：\033[36mreF1nd\033[0m" \
+                "项目地址：\033[32mhttps://github.com/reF1nd/sing-box\033[0m" \
+                "" \
+                "\033[32mDustinWin          \033[0m开发：\033[36mDustinWin\033[0m" \
+                "开发者地址：\033[32mhttps://github.com/DustinWin\033[0m" \
+                ""
+            btm_box "特别感谢：\033[36m所有帮助及赞助过此项目的同仁们！\033[0m"
             sleep 2
             ;;
         *)
@@ -188,6 +177,7 @@ setscripts() {
             getscripts
             # 提示
             msg_alert "\033[32m管理脚本更新成功!\033[0m"
+            line_break
             exit 0
             ;;
         *)
@@ -231,13 +221,12 @@ setcoretype() {
     while true; do
         echo "$crashcore" | grep -q 'singbox' && core_old=singbox || core_old=clash
         comp_box "\033[33m请确认该自定义内核的类型：\033[0m"
-        content_line "1) Mihomo(Meta)"
-        content_line "2) Singbox-reF1nd"
-        content_line "3) Singbox"
-        content_line "4) Clash"
-        content_line ""
-        content_line "0) 返回上级菜单"
-        separator_line "="
+        btm_box "1) Mihomo(Meta)" \
+            "2) Singbox-reF1nd" \
+            "3) Singbox" \
+            "4) Clash" \
+            "" \
+            "0) 返回上级菜单"
         read -r -p "请输入对应标号> " num
         case "$num" in
         "" | 0) ;;
@@ -365,10 +354,8 @@ checkcustcore() {
                 while IFS= read -r line; do
                     content_line "$line"
                 done
-
-            content_line ""
-            content_line "0) 返回上级菜单"
-            separator_line "="
+            btm_box "" \
+                "0) 返回上级菜单"
             read -r -p "请输入对应标号> " num
             case "$num" in
             0)
@@ -415,14 +402,13 @@ setcustcore() {
         separator_line "="
         content_line "请选择需要使用的核心："
         separator_line "-"
-        content_line "1) \033[36mMetaCubeX/mihomo\033[32m@release\033[0m版本官方内核"
-        content_line "2) \033[36mvernesong/mihomo\033[32m@alpha\033[0m版本内核(支持Smart策略)"
-        content_line "3) \033[36mSagerNet/sing-box\033[32m@release\033[0m版本官方内核"
-        content_line "4) Premium-2023.08.17内核(已停止维护)"
-        content_line "9) \033[33m自定义内核链接 \033[0m"
-        content_line ""
-        content_line "0) 返回上级菜单"
-        separator_line "="
+        btm_box "1) \033[36mMetaCubeX/mihomo\033[32m@release\033[0m版本官方内核" \
+            "2) \033[36mvernesong/mihomo\033[32m@alpha\033[0m版本内核(支持Smart策略)" \
+            "3) \033[36mSagerNet/sing-box\033[32m@release\033[0m版本官方内核" \
+            "4) Premium-2023.08.17内核(已停止维护)" \
+            "9) \033[33m自定义内核链接 \033[0m" \
+            "" \
+            "0) 返回上级菜单"
         read -r -p "请输入对应标号> " num
         case "$num" in
         "" | 0)
@@ -454,7 +440,7 @@ setcustcore() {
             ;;
         9)
             comp_box "请输入自定义内核的链接地址" \
-                "（必须是以.tar.gz或.gz结尾的压缩文件）" \
+                "（必须是以.tar.gz、.upx或.gz结尾的压缩文件）" \
                 "" \
                 "或者输入 0 返回上级菜单"
             read -r -p "请输入> " link
@@ -509,16 +495,16 @@ setcore() {
         [ -z "$crashcore" ] && crashcore="unknow"
         [ -z "$zip_type" ] && zip_type="tar.gz"
         echo "$crashcore" | grep -q 'singbox' && core_old=singbox || core_old=clash
-        [ -n "$custcorelink" ] && custcore="$(echo "$custcorelink" | sed 's#.*github.com##; s#/releases/download/#@#; s#-linux.*$##')"
+        [ -n "$custcorelink" ] && custcore="$(echo "$custcorelink" | sed 's#.*github.com##; s#/releases/download/#@#')"
 
         [ -z "$cpucore" ] && check_cpucore
 
         comp_box "当前内核：\033[42;30m$crashcore\033[47;30m $core_v\033[0m" \
             "当前系统处理器架构：\033[32m$cpucore\033[0m" \
-            "\033[36m如需本地上传，请将.upx .gz .tar.gz文件上传至 /tmp 目录后重新运行crash命令\033[0m"
+            "\033[36m如需本地上传，请将.upx .gz .tar.gz文件上传至 /tmp 目录后重新运行crash命令\033[0m" \
+            "" \
+            "\033[33m请选择需要使用的核心版本：\033[0m"
 
-        content_line "\033[33m请选择需要使用的核心版本：\033[0m"
-        separator_line "-"
         content_line "1) \033[43;30mMihomo\033[0m：\033[32m$meta_v \033[32m（原meta内核）支持全面\033[0m \033[33m占用略高\033[0m"
         sub_content_line "说明文档：\033[36;4mhttps://wiki.metacubex.one\033[0m"
 
@@ -533,13 +519,12 @@ setcore() {
             content_line "4) \033[43;30mClash\033[0m：\033[32m$clash_v \033[32m占用低\033[0m \033[33m不安全,已停止维护\033[0m"
             sub_content_line "说明文档：\033[36;4mhttps://lancellc.gitbook.io\033[0m"
         }
-        content_line "5) 切换版本分支及压缩方式：\033[32m$zip_type\033[0m"
-        content_line "6) \033[36m使用自定义内核\033[0m $custcore"
-        content_line "7) \033[32m更新当前内核\033[0m"
-        content_line "9) 手动指定处理器架构"
-        content_line ""
-        content_line "0 返回上级菜单"
-        separator_line "="
+        btm_box "5) 切换版本分支及压缩方式：\033[32m$zip_type\033[0m" \
+            "6) \033[36m使用自定义内核\033[0m $custcore" \
+            "7) \033[32m更新当前内核\033[0m" \
+            "9) 手动指定处理器架构" \
+            "" \
+            "0) 返回上级菜单"
         read -r -p "请输入对应标号> " num
         case "$num" in
         "" | 0)
@@ -779,20 +764,19 @@ setgeo() {
             "" \
             "请选择需要更新的Geo数据库文件："
 
-        content_line "1) CN-IP绕过文件（约0.1mb）	\033[33m$china_ip_list_v\033[0m"
-        content_line "2) CN-IPV6绕过文件（约30kb）	\033[33m$china_ipv6_list_v\033[0m"
-        content_line ""
-        content_line "3) Mihomo精简版GeoIP_cn数据库（约0.1mb）	\033[33m$cn_mini_v\033[0m"
-        content_line "4) Mihomo完整版GeoSite数据库（约5mb）	\033[33m$geosite_v\033[0m"
-        content_line ""
-        content_line "5) Mihomo-mrs数据库常用包（约1mb,非必要勿用）"
-        content_line "6) Singbox-srs数据库常用包（约0.8mb,非必要勿用）"
-        content_line ""
-        content_line "8) \033[36m自定义数据库文件\033[0m"
-        content_line "9) \033[31m清理数据库文件\033[0m"
-        content_line ""
-        content_line "0) 返回上级菜单"
-        separator_line "="
+        btm_box "1) CN-IP绕过文件（约0.1mb）	\033[33m$china_ip_list_v\033[0m" \
+            "2) CN-IPV6绕过文件（约30kb）	\033[33m$china_ipv6_list_v\033[0m" \
+            "" \
+            "3) Mihomo精简版GeoIP_cn数据库（约0.1mb）	\033[33m$cn_mini_v\033[0m" \
+            "4) Mihomo完整版GeoSite数据库（约5mb）	\033[33m$geosite_v\033[0m" \
+            "" \
+            "5) Mihomo-mrs数据库常用包（约1mb,非必要勿用）" \
+            "6) Singbox-srs数据库常用包（约0.8mb,非必要勿用）" \
+            "" \
+            "8) \033[36m自定义数据库文件\033[0m" \
+            "9) \033[31m清理数据库文件\033[0m" \
+            "" \
+            "0) 返回上级菜单"
         read -r -p "请输入对应标号> " num
         case "$num" in
         "" | 0)
@@ -964,18 +948,17 @@ setdb() {
             "\033[32m打开管理面板的速度更快且更稳定\033[0m" \
             "" \
             "请选择面板安装类型："
-        content_line "   - - - - - - -维护中- - - - - - -"
-        content_line "1) 安装\033[32mzashboard面板\033[0m（约2.2mb）"
-        content_line "2) 安装\033[32mMetaXD面板\033[0m（约1.5mb）"
-        content_line "3) 安装\033[32mYacd-Meta魔改面板\033[0m（约1.7mb）"
-        content_line "   - - - - - -已停止维护- - - - - -"
-        content_line "4) 安装\033[32m基础面板\033[0m（约500kb）"
-        content_line "5) 安装\033[32mMeta基础面板\033[0m（约800kb）"
-        content_line "6) 安装\033[32mYacd面板\033[0m（约1.1mb）"
-        content_line "9) \033[31m卸载本地面板\033[0m"
-        content_line ""
-        content_line "0) 返回上级菜单"
-        separator_line "="
+        btm_box "   - - - - - - -维护中- - - - - - -" \
+            "1) 安装\033[32mzashboard面板\033[0m（约2.2mb）" \
+            "2) 安装\033[32mMetaXD面板\033[0m（约1.5mb）" \
+            "3) 安装\033[32mYacd-Meta魔改面板\033[0m（约1.7mb）" \
+            "   - - - - - -已停止维护- - - - - -" \
+            "4) 安装\033[32m基础面板\033[0m（约500kb）" \
+            "5) 安装\033[32mMeta基础面板\033[0m（约800kb）" \
+            "6) 安装\033[32mYacd面板\033[0m（约1.1mb）" \
+            "9) \033[31m卸载本地面板\033[0m" \
+            "" \
+            "0) 返回上级菜单"
         read -r -p "请输入对应标号> " num
         case "$num" in
         "" | 0)
@@ -1145,16 +1128,15 @@ setserver() {
                 content_line "$line"
             done
 
-        content_line
-        content_line "a) 切换至\033[32m稳定版-stable\033[0m"
-        content_line "b) 切换至\033[36m公测版-master\033[0m"
-        content_line "c) 切换至\033[33m开发版-dev\033[0m"
-        content_line
-        content_line "d) 自定义源地址（用于本地源或自建源）"
-        content_line "e) \033[31m版本回退\033[0m"
-        content_line
-        content_line "0) 返回上级菜单"
-        separator_line "="
+        btm_box "" \
+            "a) 切换至\033[32m稳定版-stable\033[0m" \
+            "b) 切换至\033[36m公测版-master\033[0m" \
+            "c) 切换至\033[33m开发版-dev\033[0m" \
+            "" \
+            "d) 自定义源地址（用于本地源或自建源）" \
+            "e) \033[31m版本回退\033[0m" \
+            "" \
+            "0) 返回上级菜单"
         read -r -p "请输入对应标号> " num
         case "$num" in
         "" | 0)
@@ -1165,7 +1147,6 @@ setserver() {
             url_id_new=$(grep -E "^1|$release_name" "$CRASHDIR"/configs/servers.list | sed -n "$num"p | awk '{print $1}')
             if [ -z "$url_id_new" ]; then
                 errornum
-                sleep 1
                 continue
             elif [ "$url_id_new" -ge 200 ]; then
                 update_url=$(grep -E "^1|$release_name" "$CRASHDIR"/configs/servers.list | sed -n "$num"p | awk '{print $3}')
@@ -1195,11 +1176,10 @@ setserver() {
                 comp_box "\033[33m开发版未经过妥善测试，可能依然存在大量bug！！！\033[0m" \
                     "\033[33m如果你没有足够的耐心或者测试经验，切勿使用此版本！\033[0m" \
                     "请务必加入我们的讨论组：\033[36;4mhttps://t.me/ShellClash\033[0m"
-                content_line "是否依然切换到开发版："
+                content_line "是否依然切换到开发版？"
                 separator_line "-"
-                content_line "1) 确认切换"
-                content_line "0) 返回上级菜单"
-                separator_line "="
+                btm_box "1) 确认切换" \
+                    "0) 返回上级菜单"
                 read -r -p "请输入对应标号> " res
                 case "$res" in
                 "" | 0)
@@ -1218,7 +1198,7 @@ setserver() {
             done
             ;;
         d)
-            comp_box "请直接输入个人源路径" \
+            comp_box "\033[36m请直接输入个人源路径\033[0m" \
                 "或者输入 0 返回上级菜单"
             read -r -p "请输入个人源路径> " update_url
             if [ "$update_url" = 0 ]; then
@@ -1235,7 +1215,7 @@ setserver() {
                 separator_line "="
                 content_line "\033[32m正在获取版本信息......\033[0m"
                 . "$CRASHDIR"/libs/web_get_lite.sh
-                web_get_lite https://github.com/juewuy/ShellCrash/tags | grep -o 'releases/tag/.*data' | awk -F '/' '{print $3}' | sed 's/".*//g' >"$TMPDIR"/tags
+                list=$(web_get_lite https://api.github.com/repos/juewuy/ShellCrash/tags | grep -E '"name": "[0-9]' | cut -d '"' -f4)
                 if [ "$?" = "0" ]; then
                     content_line "\033[32m获取版本信息成功\033[0m"
                     separator_line "="
@@ -1243,20 +1223,14 @@ setserver() {
                     line_break
                     separator_line "="
                     content_line "\033[31m请选择想要回退至的具体版本：\033[0m"
-
-                    cat "$TMPDIR"/tags |
-                        awk '{print NR") "$1}' |
-                        while IFS= read -r line; do
-                            content_line "$line"
-                        done
-
-                    content_line
-                    content_line "0) 返回上级菜单"
+                    list_box "$list"
+                    btm_box "" \
+                        "0) 返回上级菜单"
                     read -r -p "请输入对应标号> " num
                     if [ -z "$num" ] || [ "$num" = 0 ]; then
                         continue
-                    elif [ "$num" -le $(cat "$TMPDIR"/tags 2>/dev/null | awk 'END{print NR}') ]; then
-                        release_type=$(cat "$TMPDIR"/tags | awk '{print $1}' | sed -n "$num"p)
+                    elif [ "$num" -le $(echo "$list" | awk 'END{print NR}') ]; then
+                        release_type=$(echo "$list" | sed -n "$num"p)
                         update_url=''
                         saveserver
                     else
