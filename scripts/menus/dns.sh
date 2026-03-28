@@ -14,9 +14,9 @@ set_dns_mod() {
         [ -z "$ecs_subnet" ] && ecs_subnet=OFF
         comp_box "$DNS_CURRENT_MODE\033[47;30m $dns_mod \033[0m" \
             "\033[33m$DNS_RESTART_NOTICE\033[0m"
-        content_line "1) 设为MIX$COMMON_MOD：\t\033[32m$DNS_MODE_MIX_DESC\033[0m"
-        content_line "2) 设为Route$COMMON_MOD：\t\033[32m$DNS_MODE_ROUTE_DESC\033[0m"
-        content_line "3) 设为Redir$COMMON_MOD：\t\033[33m$DNS_MODE_REDIR_DESC\033[0m"
+        content_line "1) $DNS_SET_TO MIX$COMMON_MOD：\t\033[32m$DNS_MODE_MIX_DESC\033[0m"
+        content_line "2) $DNS_SET_TO Route$COMMON_MOD：\t\033[32m$DNS_MODE_ROUTE_DESC\033[0m"
+        content_line "3) $DNS_SET_TO Redir$COMMON_MOD：\t\033[33m$DNS_MODE_REDIR_DESC\033[0m"
         content_line ""
         content_line "4) $DNS_MENU_PROTECT：\t \033[36m$dns_protect\033[0m\t$DNS_PROTECT_DESC"
         content_line "5) $DNS_MENU_HOSTS：\t \033[36m$hosts_opt\033[0m\t$DNS_HOSTS_DESC"
@@ -48,126 +48,41 @@ set_dns_mod() {
             msg_alert "\033[36m$DNS_SET_OK：$dns_mod\033[0m"
             ;;
         4)
-            while true; do
-                line_break
-                separator_line "="
-                if [ "$dns_protect" = ON ]; then
-                    content_line "当前\033[33m已启用\033[0mDNS防泄漏，是否确认禁用？"
-                else
-                    content_line "当前\033[33m已禁用\033[0mDNS防泄漏，是否确认启用？"
-                fi
-                separator_line "="
-                btm_box "1) 是" \
-                    "2) 重置为默认值" \
-                    "0) 否，返回上级菜单"
-                read -r -p "$COMMON_INPUT> " num
-                case "$num" in
-                0)
-                    break
-                    ;;
-                1)
-                    if [ "$dns_protect" = ON ]; then
-                        dns_protect=OFF
-                    else
-                        dns_protect=ON
-                    fi
-                    ;;
-                2)
-                    dns_protect=ON
-                    ;;
-                *)
-                    errornum
-                    continue
-                    ;;
-                esac
-                setconfig dns_protect "$dns_protect"
-                common_success
-            done
+            if [ "$dns_protect" = ON ]; then
+                dns_protect=OFF
+            else
+                dns_protect=ON
+            fi
+            setconfig dns_protect "$dns_protect"
+            common_success
             ;;
         5)
-            while true; do
-                line_break
-                separator_line "="
-                if [ "$hosts_opt" = ON ]; then
-                    content_line "当前\033[33m已启用\033[0mHosts优化，是否确认禁用？"
-                else
-                    content_line "当前\033[33m已禁用\033[0mHosts优化，是否确认启用？"
-                fi
-                separator_line "="
-                btm_box "1) 是" \
-                    "2) 重置为默认值" \
-                    "0) 否，返回上级菜单"
-                read -r -p "$COMMON_INPUT> " num
-                case "$num" in
-                0)
-                    break
-                    ;;
-                1)
-                    if [ "$hosts_opt" = ON ]; then
-                        hosts_opt=OFF
-                    else
-                        hosts_opt=ON
-                    fi
-                    ;;
-                2)
-                    hosts_opt=ON
-                    ;;
-                *)
-                    errornum
-                    continue
-                    ;;
-                esac
-                setconfig dns_protect "$hosts_opt"
-                common_success
-            done
+            if [ "$hosts_opt" = ON ]; then
+                hosts_opt=OFF
+            else
+                hosts_opt=ON
+            fi
+            setconfig hosts_opt "$hosts_opt"
+            common_success
             ;;
         6)
-
-            while true; do
-                line_break
-                separator_line "="
-                if [ "$ecs_subnet" = ON ]; then
-                    content_line "当前\033[33m已启用\033[0mHosts优化，是否确认禁用？"
-                else
-                    content_line "当前\033[33m已禁用\033[0mHosts优化，是否确认启用？"
-                fi
-                separator_line "="
-                btm_box "1) 是" \
-                    "2) 重置为默认值" \
-                    "0) 否，返回上级菜单"
-                read -r -p "$COMMON_INPUT> " num
-                case "$num" in
-                0)
-                    break
-                    ;;
-                1)
-                    if [ "$ecs_subnet" = ON ]; then
-                        ecs_subnet=OFF
-                    else
-                        ecs_subnet=ON
-                    fi
-                    ;;
-                2)
-                    ecs_subnet=OFF
-                    ;;
-                *)
-                    errornum
-                    continue
-                    ;;
-                esac
-                setconfig dns_protect "$ecs_subnet"
-                common_success
-            done
+            if [ "$ecs_subnet" = ON ]; then
+                ecs_subnet=OFF
+            else
+                ecs_subnet=ON
+            fi
+            setconfig ecs_subnet "$ecs_subnet"
+            common_success
             ;;
         7)
             while true; do
                 comp_box "\033[31m$DNS_REDIR_WARN\033[0m" \
                     "\033[33m$DNS_REDIR_HINT 127.0.0.1:$dns_port\033[0m" \
                     "" \
-                    "\033[36m请直接输入旁路由IPV4地址\033[0m" \
-                    "或输入 r 重置DNS劫持端口" \
-                    "或输入 0 返回上级菜单"
-                read -r -p "请输入> " num
+                    "\033[36m$DNS_INPUT_REDIR_PORT\033[0m" \
+                    "$DNS_INPUT_REDIR_RESET" \
+                    "$DNS_INPUT_REDIR_BACK"
+                read -r -p "$DNS_INPUT> " num
                 case "$num" in
                 0)
                     break
@@ -224,7 +139,7 @@ fake_ip_filter() {
             content_line "\033[33m$DNS_FAKEIP_EMPTY\033[0m"
         fi
         btm_box "" \
-            "0) 返回上级菜单"
+            "0) $COMMON_BACK"
         read -r -p "$DNS_FAKEIP_EDIT> " input
         case "$input" in
         "" | 0)
@@ -233,20 +148,20 @@ fake_ip_filter() {
         *)
             if [ "$input" -ge 1 ] 2>/dev/null; then
                 if sed -i "${input}d" "$CRASHDIR/configs/fake_ip_filter"; then
-                    msg_alert "\033[32m移除成功\033[0m"
+                    msg_alert "\033[32m$DNS_REMOVE_OK\033[0m"
                 else
-                    msg_alert "\033[31m移除失败\033[0m"
+                    msg_alert "\033[31m$DNS_REMOVE_FAIL\033[0m"
                 fi
             else
-                comp_box "请确认需要添加的地址：\033[32m$input\033[0m"
-                btm_box "1) 确认无误" \
-                    "0) 返回上级菜单"
+                comp_box "$DNS_CONFIRM_ADD\033[32m$input\033[0m"
+                btm_box "1) $DNS_CONFIRM_OK" \
+                    "0) $COMMON_BACK"
                 read -r -p "$COMMON_INPUT>" res
                 if [ "$res" = 1 ]; then
                     if echo "$input" >>"$CRASHDIR/configs/fake_ip_filter"; then
-                        msg_alert "\033[32m添加成功\033[0m"
+                        msg_alert "\033[32m$DNS_ADD_OK\033[0m"
                     else
-                        msg_alert "\033[31m添加失败\033[0m"
+                        msg_alert "\033[31m$DNS_ADD_FAIL\033[0m"
                     fi
                 else
                     break
@@ -286,11 +201,11 @@ set_dns_adv() {
             break
             ;;
         1)
-            comp_box "当前DIRECT-DNS：\033[32m$dns_nameserver\033[0m"
-            btm_box "\033[36m请直接输入新的DIRECT-DNS地址\033[0m" \
-                "或输入 r 重置DIRECT-DNS地址" \
-                "或输入 0 返回上级菜单"
-            read -r -p "请输入> " res
+            comp_box "$DNS_DIRECT_NOW\033[32m$dns_nameserver\033[0m"
+            btm_box "\033[36m$DNS_INPUT_DIRECT_NEW\033[0m" \
+                "$DNS_INPUT_DIRECT_RESET" \
+                "$DNS_INPUT_REDIR_BACK"
+            read -r -p "$DNS_INPUT> " res
             case "$res" in
             0)
                 continue
@@ -312,11 +227,11 @@ set_dns_adv() {
             esac
             ;;
         2)
-            comp_box "当前PROXY-DNS：\033[32m$dns_fallback\033[0m"
-            btm_box "\033[36m请直接输入新的PROXY-DNS地址\033[0m" \
-                "或输入 r 重置PROXY-DNS地址" \
-                "或输入 0 返回上级菜单"
-            read -r -p "请输入> " res
+            comp_box "$DNS_PROXY_NOW\033[32m$dns_fallback\033[0m"
+            btm_box "\033[36m$DNS_INPUT_PROXY_NEW\033[0m" \
+                "$DNS_INPUT_PROXY_RESET" \
+                "$DNS_INPUT_REDIR_BACK"
+            read -r -p "$DNS_INPUT> " res
             case "$res" in
             0)
                 continue
@@ -338,12 +253,12 @@ set_dns_adv() {
             esac
             ;;
         3)
-            comp_box "当前DEFAULT-DNS：\033[32m$dns_resolver\033[0m"
-            btm_box "\033[36m请直接输入新的DEFAULT-DNS地址\033[0m" \
-                "或输入 r 重置DEFAULT-DNS地址" \
-                "或输入 0 返回上级菜单"
+            comp_box "$DNS_DEFAULT_NOW\033[32m$dns_resolver\033[0m"
+            btm_box "\033[36m$DNS_INPUT_DEFAULT_NEW\033[0m" \
+                "$DNS_INPUT_DEFAULT_RESET" \
+                "$DNS_INPUT_REDIR_BACK"
             separator_line "="
-            read -r -p "请输入> " res
+            read -r -p "$DNS_INPUT> " res
             case "$res" in
             0)
                 continue
