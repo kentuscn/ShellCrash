@@ -22,7 +22,7 @@ mode: rule
 log-level: info
 
 # 开启 IPv6 总开关，（开启true）（关闭false） 关闭阻断所有 IPv6 链接和屏蔽 DNS 请求 AAAA 记录 
-ipv6: true
+ipv6: false
 
 # 更换延迟计算方式，去除握手等额外延迟
 unified-delay: true
@@ -34,12 +34,12 @@ external-controller: :9090
 dns:
   enable: true      # 是否启用dns 启用 true 禁用false
   # cache-algorithm: arc  # DNS 缓存管理 相关的配置
-  prefer-h3: true   # 使用 DoH 的 HTTP/3，提高解析速度
+  prefer-h3: false   # 使用 DoH 的 HTTP/3，提高解析速度
   use-hosts: true   # 允许使用 hosts 解析，默认 true
   use-system-hosts: true   # 是否使用系统 hosts，默认 true
-  respect-rules: false     # 遵循 Clash 规则进行解析，防止 DNS 污染，启用 true 禁用false
+  respect-rules: true     # 遵循 Clash 规则进行解析，防止 DNS 污染，启用 true 禁用false
   listen: 0.0.0.0:1053
-  ipv6: true
+  ipv6: false
 
  # 用于解析 nameserver，fallback 以及其他 DNS 服务器配置的 DNS 域名
  # 只能使用纯 IP 地址，可使用加密 DNS
@@ -53,9 +53,9 @@ dns:
  
  # DNS 处理模式：可选值 normal / fake-ip / redir-host
  # 启用 fake-ip
-  enhanced-mode: fake-ip
+  enhanced-mode: redir-host
   #fake-ip-range: 28.0.0.1/8
-  fake-ip-range: 198.18.0.1/16   #fake-ip 官方推荐的段
+#  fake-ip-range: 198.18.0.1/16   #fake-ip 官方推荐的段
   
  # fake ip 筛选模式
  # 可选 blacklist/whitelist
@@ -64,62 +64,62 @@ dns:
   #fake-ip-filter-mode: blacklist
  
  # fake ip 白名单列表，匹配到的将返回真实 IP
-  fake-ip-filter:
+#  fake-ip-filter:
     #- "+.*"                       # [不推荐] 回退所有域名，即所有域名都不使用 fake-ip，而是返回真实 IP。相当于回退到 redir-host 模式。
-    - "*.lan"                      # 局域网设备（如路由器、打印机等）使用真实 IP
+#    - "*.lan"                      # 局域网设备（如路由器、打印机等）使用真实 IP
     #- "*.local"                    # 局域网设备，避免解析为假 IP
-    - "localhost.ptlogin2.qq.com"  # 腾讯 QQ 登录服务避免 fake-ip
-    - "*.msftconnecttest.com"      # Windows 网络检测服务避免 fake-ip
-    - "*.apple.com"                # Apple 相关服务避免 fake-ip，防止 iCloud 解析问题
-    - "*.windows.com"              # Windows 相关域名解析为真实 IP  
+#    - "localhost.ptlogin2.qq.com"  # 腾讯 QQ 登录服务避免 fake-ip
+#    - "*.msftconnecttest.com"      # Windows 网络检测服务避免 fake-ip
+#    - "*.apple.com"                # Apple 相关服务避免 fake-ip，防止 iCloud 解析问题
+#    - "*.windows.com"              # Windows 相关域名解析为真实 IP  
     
     # ===============================
     # 一、Cloudflare Tunnel / Argo Tunnel（必须真实 IP）
     # ===============================
-    - "*.argotunnel.com"
-    - "*.v2.argotunnel.com"
-    - "*.cfargotunnel.com"
-    - "*.cftunnel.com"
+#    - "*.argotunnel.com"
+#    - "*.v2.argotunnel.com"
+#    - "*.cfargotunnel.com"
+#    - "*.cftunnel.com"
 
     # ===============================
     # 二、Cloudflare WARP / 客户端 / Zero Trust（必须真实 IP）
     # ===============================
-    - "*.cloudflareclient.com"
-    - "*.cloudflarewarp.com"
-    - "*.warp.cloudflare.com"
-    - "*.cfwarp.com"
+ #   - "*.cloudflareclient.com"
+ #   - "*.cloudflarewarp.com"
+ #   - "*.warp.cloudflare.com"
+ #   - "*.cfwarp.com"
 
     # ===============================
     # 三、Cloudflare 核心控制面 / Anycast 路由（强烈建议真实 IP）
     # ===============================
-    - "*.cloudflare.com"
-    - "*.cloudflare.net"
+#    - "*.cloudflare.com"
+#    - "*.cloudflare.net"
 
     # ===============================
     # 四、Cloudflare DNS / DoH / DoT（避免 DNS 回环）
     # ===============================
-    - "one.one.one.one"
-    - "cloudflare-dns.com"
-    - "*.cloudflare-dns.com"
+#    - "one.one.one.one"
+#    - "cloudflare-dns.com"
+#    - "*.cloudflare-dns.com"
 
     # ===============================
     # 五、Cloudflare Zero Trust / Teams / Access（企业认证相关）
     # ===============================
-    - "*.cloudflareaccess.com"
-    - "*.cloudflareteams.com"
-    - "*.cloudflarezero.com"
+#    - "*.cloudflareaccess.com"
+#    - "*.cloudflareteams.com"
+#    - "*.cloudflarezero.com"
 
     # ===============================
     # 六、Cloudflare 状态监控 / 数据分析（探测与健康检查）
     # ===============================
-    - "*.cloudflarestatus.com"
-    - "*.cloudflareinsights.com"
+#    - "*.cloudflarestatus.com"
+#    - "*.cloudflareinsights.com"
 
     # ===============================
     # 七、Cloudflare 兼容 / 测试 / 研究域名（兜底，防未来升级踩坑）
     # ===============================
-    - "*.cloudflareresearch.com"
-    - "*.cloudflaretest.com"
+#    - "*.cloudflareresearch.com"
+#    - "*.cloudflaretest.com"
 
 
  # 指定域名查询的解析服务器，可使用 geosite 或'rule-set:cn': 优先于 nameserver/fallback 查询
@@ -170,11 +170,11 @@ dns:
     #- https://dns11.quad9.net/dns-query             # IBM DoH ECS保护 延迟190左右 无丢包
 
  # 专用于节点域名解析的 DNS 服务器，非必要配置项
-  #proxy-server-nameserver:
+  proxy-server-nameserver:
     #- https://8.8.8.8/dns-query      # Google DoH IP
     #- https://1.1.1.1/dns-query      # Cloudflare DoH IP
-    #- https://dns.google/dns-query             # Google DoH 域名
-    #- https://cloudflare-dns.com/dns-query     # Cloudflare DoH 延迟大 非主力DNS
+    - https://dns.google/dns-query             # Google DoH 域名
+    - https://cloudflare-dns.com/dns-query     # Cloudflare DoH 延迟大 非主力DNS
     #- tls://1.0.0.1:853              # Cloudflare DoT IP延迟大
     #- tls://dns.google               # Google DoT 域名
     #- tls://8.8.4.4:853              # Google DoT IP
@@ -188,9 +188,9 @@ dns:
 
  # 用于direct出口域名解析的 DNS 服务器
  # 如果不填则遵循 nameserver-policy、nameserver 和 fallback 的配置
-  #direct-nameserver:
-    #- https://dns.alidns.com/dns-query   # 阿里 DOH
-    #- https://doh.pub/dns-query          # 腾讯 DNSPod DOH
+  direct-nameserver:
+    - https://dns.alidns.com/dns-query   # 阿里 DOH
+    - https://doh.pub/dns-query          # 腾讯 DNSPod DOH
     #- tls://dns.alidns.com               # 阿里 DOT
     #- tls://dot.pub:853                  # 腾讯 DNSPod DOT
     #- 223.5.5.5                     # 阿里 IPv4
