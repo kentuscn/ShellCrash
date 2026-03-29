@@ -55,9 +55,9 @@ external-controller: :9090
 dns:
   enable: true      # 是否启用dns 启用 true 禁用false
   
-  # cache-algorithm DNS 缓存管理 相关的配置
-  # lru：Least Recently Used（最近最少使用淘汰）。LRU 的行为访问序列：A B C D E F G 缓存满 → A 被淘汰，不管你是不是“常用”只要最近没用 → 直接清。
-  # arc：Adaptive Replacement Cache（自适应缓存）。ARC 的行为访问序列：A B C A B D E 缓存满 ARC 会识别：A、B 是“高频”不会轻易清。内存占用稍微多一点。
+# cache-algorithm DNS 缓存管理 相关的配置
+# lru：Least Recently Used（最近最少使用淘汰）。LRU 的行为访问序列：A B C D E F G 缓存满 → A 被淘汰，不管你是不是“常用”只要最近没用 → 直接清。
+# arc：Adaptive Replacement Cache（自适应缓存）。ARC 的行为访问序列：A B C A B D E 缓存满 ARC 会识别：A、B 是“高频”不会轻易清。内存占用稍微多一点。
   cache-algorithm: arc
   
   prefer-h3: false   # 使用 DoH 的 HTTP/3，提高解析速度
@@ -166,13 +166,13 @@ dns:
     "geosite:cn",private,apple":
     #- 223.5.5.5                           # 阿里 IPv4
     #- 119.29.29.29                        # 腾讯 DNSPod
-     - https://dns.alidns.com/dns-query    # 阿里 DOH
-     - https://doh.pub/dns-query           # 腾讯 DNSPod DOH
+      - https://dns.alidns.com/dns-query    # 阿里 DOH
+      - https://doh.pub/dns-query           # 腾讯 DNSPod DOH
   
   # 明确标记为 非CN 的域名，用下面的 DNS 解析
     "geosite:geolocation-!cn":
-     - https://dns.google/dns-query#proxy              # Google DoH
-     - https://cloudflare-dns.com/dns-query#proxy      # Cloudflare DoH 延迟大 非主力DNS
+      - https://dns.google/dns-query#proxy              # Google DoH
+      - https://cloudflare-dns.com/dns-query#proxy      # Cloudflare DoH 延迟大 非主力DNS
   
  # 默认的域名服务器，如不配置 fallback/proxy-server-nameserver，则所有域名都由 nameserver 解析
   nameserver:
