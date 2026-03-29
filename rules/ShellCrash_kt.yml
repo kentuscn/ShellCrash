@@ -70,6 +70,7 @@ dns:
     - "*.lan"                      # 局域网设备（如路由器、打印机等）使用真实 IP
     - "*.local"                    # 局域网设备，避免解析为假 IP
     - "localhost"
+    - ".arpa"
     - "*.pool.ntp.org"
     - "time.*"
     - "*.ntp.*"
@@ -78,6 +79,7 @@ dns:
     - "dns.google"
     - "cloudflare-dns.com"
     - "localhost.ptlogin2.qq.com"  # 腾讯 QQ 登录服务避免 fake-ip
+    - "*.msftncsi.com"
     - "*.msftconnecttest.com"      # Windows 网络检测服务避免 fake-ip
     - "*.apple.com"                # Apple 相关服务避免 fake-ip，防止 iCloud 解析问题
     - "*.windows.com"              # Windows 相关域名解析为真实 IP  
