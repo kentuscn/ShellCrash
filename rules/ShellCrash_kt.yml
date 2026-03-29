@@ -1,3 +1,24 @@
+# GEOIP 数据模式
+# 更改 geoip 使用文件，mmdb 或者 dat，可选 true/false,true为 dat，此项有默认值 false
+geodata-mode: true 
+
+# GEO 文件加载模式
+# 可选的加载模式如下
+# standard：标准加载器
+# memconservative：专为内存受限 (小内存) 设备优化的加载器 (默认值)
+geodata-loader: memconservative
+
+# 自动更新 GEO
+geo-auto-update: true
+geo-update-interval: 24   # 更新间隔，单位为小时
+
+# 自定 GEO 下载地址
+geox-url:
+  geoip: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat"
+  geosite: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat"
+  mmdb: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb"
+  asn: "https://github.com/xishang0128/geoip/releases/download/latest/GeoLite2-ASN.mmdb"
+
 # HTTP(S) 代理端口
 #port: 7890
 
@@ -134,19 +155,19 @@ dns:
 
 
  # 指定域名查询的解析服务器，可使用 geosite 或'rule-set:cn': 优先于 nameserver/fallback 查询
-  #nameserver-policy:
+  nameserver-policy:
   
   # 明确标记为 CN 的域名，用下面的 DNS 解析
-    #"geosite:cn":
+    "geosite:cn":
     #- 223.5.5.5                     # 阿里 IPv4
     #- 119.29.29.29                  # 腾讯 DNSPod
-    #- https://dns.alidns.com/dns-query  # 阿里 DOH
-    #- https://doh.pub/dns-query         # 腾讯 DNSPod DOH
+     - https://dns.alidns.com/dns-query  # 阿里 DOH
+     - https://doh.pub/dns-query         # 腾讯 DNSPod DOH
   
   # 明确标记为 非CN 的域名，用下面的 DNS 解析
-    #"geosite:!cn":
-    #- https://cloudflare-dns.com/dns-query   # Cloudflare DoH 域名
-    #- https://doh.opendns.com/dns-query      # Opendns DOH
+    "geosite:geolocation-!cn":
+     - https://cloudflare-dns.com/dns-query   # Cloudflare DoH 域名
+     - https://doh.opendns.com/dns-query      # Opendns DOH
   
  # 默认的域名服务器，如不配置 fallback/proxy-server-nameserver，则所有域名都由 nameserver 解析
   nameserver:
@@ -164,11 +185,11 @@ dns:
  # fallback （用于解析境外网站）会查询 nameserver 中返回的 IP 是否为 CN，非必要配置
  # 当不是 CN，则使用 fallback 中的 DNS 解析
  # 解析墙外域名，推荐使用境外 DNS
-  fallback:
+#  fallback:
     #- https://8.8.8.8/dns-query      # Google DoH IP
     #- https://1.1.1.1/dns-query      # Cloudflare DoH IP
-    - https://dns.google/dns-query             # Google DoH 域名
-    - https://cloudflare-dns.com/dns-query     # Cloudflare DoH 延迟大 非主力DNS
+#    - https://dns.google/dns-query             # Google DoH 域名
+#    - https://cloudflare-dns.com/dns-query     # Cloudflare DoH 延迟大 非主力DNS
     #- tls://1.0.0.1:853              # Cloudflare DoT IP延迟大
     #- tls://dns.google               # Google DoT 域名
     #- tls://8.8.4.4:853              # Google DoT IP
@@ -217,22 +238,22 @@ dns:
   #direct-nameserver-follow-policy: false
     
  # fallback 过滤器（决定哪些请求用 fallback DNS解析
-  fallback-filter:
-    geoip: true       # 启用 GeoIP 规则
-    geoip-code: CN    # geoip 库中中国 IP 走 nameserver 解析结果，非中国 IP 使用 fallback 解析结果
-    geosite:          # 匹配到 geosite 库中的 gfw 的内容将只使用 fallback DNS解析
-      - gfw           # 被墙的网站，直接用 fallback 解析
-    ipcidr:           # 匹配到这些网段的 IP 直接使用 fallback DNS解析
-      - 240.0.0.0/4
+#  fallback-filter:
+#    geoip: true       # 启用 GeoIP 规则
+#    geoip-code: CN    # geoip 库中中国 IP 走 nameserver 解析结果，非中国 IP 使用 fallback 解析结果
+#    geosite:          # 匹配到 geosite 库中的 gfw 的内容将只使用 fallback DNS解析
+#      - gfw           # 被墙的网站，直接用 fallback 解析
+#    ipcidr:           # 匹配到这些网段的 IP 直接使用 fallback DNS解析
+#      - 240.0.0.0/4
       #- 0.0.0.0/32
       #- 127.0.0.1/32
       
   # 匹配到这些域名，会直接使用 fallback 解析
-    domain:
-      - '+.google.com'
-      - '+.facebook.com'
-      - '+.youtube.com'
-      - '+.x.com'
-      - '+.twitter.com'
-      - '+.instagram.com'
-      - '+.wikipedia.org'
+#    domain:
+#      - '+.google.com'
+#      - '+.facebook.com'
+#      - '+.youtube.com'
+#      - '+.x.com'
+#      - '+.twitter.com'
+#      - '+.instagram.com'
+#      - '+.wikipedia.org'
