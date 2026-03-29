@@ -228,11 +228,11 @@ dns:
       #- 127.0.0.1/32
       
   # 匹配到这些域名，会直接使用 fallback 解析
-    #domain:
-      #- '+.google.com'
-      #- '+.facebook.com'
-      #- '+.youtube.com'
-      #- '+.x.com'
-      #- '+.twitter.com'
-      #- '+.instagram.com'
-      #- '+.wikipedia.org'
+    domain:
+      - '+.google.com'
+      - '+.facebook.com'
+      - '+.youtube.com'
+      - '+.x.com'
+      - '+.twitter.com'
+      - '+.instagram.com'
+      - '+.wikipedia.org'
