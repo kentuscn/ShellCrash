@@ -14,10 +14,10 @@ geo-update-interval: 24   # 更新间隔，单位为小时
 
 # 自定 GEO 下载地址
 geox-url:
-  geoip: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat"
-  geosite: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat"
-  mmdb: "https://testingcf.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb"
-  asn: "https://github.com/xishang0128/geoip/releases/download/latest/GeoLite2-ASN.mmdb"
+  geoip: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat"
+  geosite: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat"
+  mmdb: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb"
+  asn: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb"
 
 # HTTP(S) 代理端口
 #port: 7890
@@ -54,10 +54,12 @@ external-controller: :9090
 # DNS 服务配置
 dns:
   enable: true      # 是否启用dns 启用 true 禁用false
+  
   # cache-algorithm DNS 缓存管理 相关的配置
   # lru：Least Recently Used（最近最少使用淘汰）。LRU 的行为访问序列：A B C D E F G 缓存满 → A 被淘汰，不管你是不是“常用”只要最近没用 → 直接清。
   # arc：Adaptive Replacement Cache（自适应缓存）。ARC 的行为访问序列：A B C A B D E 缓存满 ARC 会识别：A、B 是“高频”不会轻易清。内存占用稍微多一点。
   cache-algorithm: arc
+  
   prefer-h3: false   # 使用 DoH 的 HTTP/3，提高解析速度
   use-hosts: true   # 允许使用 hosts 解析，默认 true
   use-system-hosts: true   # 是否使用系统 hosts，默认 true
@@ -161,7 +163,7 @@ dns:
   nameserver-policy:
   
   # 明确标记为 CN 的域名，用下面的 DNS 解析
-    "geosite:cn":
+    "geosite:cn",private,apple":
     #- 223.5.5.5                           # 阿里 IPv4
     #- 119.29.29.29                        # 腾讯 DNSPod
      - https://dns.alidns.com/dns-query    # 阿里 DOH
