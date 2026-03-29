@@ -166,8 +166,8 @@ dns:
   
   # 明确标记为 非CN 的域名，用下面的 DNS 解析
     "geosite:geolocation-!cn":
-     - https://cloudflare-dns.com/dns-query   # Cloudflare DoH 域名
-     - https://doh.opendns.com/dns-query      # Opendns DOH
+     - https://cloudflare-dns.com/dns-query#proxy   # Cloudflare DoH 域名
+     - https://doh.opendns.com/dns-query#proxy      # Opendns DOH
   
  # 默认的域名服务器，如不配置 fallback/proxy-server-nameserver，则所有域名都由 nameserver 解析
   nameserver:
