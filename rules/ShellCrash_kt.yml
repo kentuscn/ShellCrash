@@ -1,24 +1,3 @@
-# GEOIP 数据模式
-# 更改 geoip 使用文件，mmdb 或者 dat，可选 true/false,true为 dat，此项有默认值 false
-geodata-mode: true 
-
-# GEO 文件加载模式
-# 可选的加载模式如下
-# standard：标准加载器
-# memconservative：专为内存受限 (小内存) 设备优化的加载器 (默认值)
-geodata-loader: memconservative
-
-# 自动更新 GEO
-geo-auto-update: true
-geo-update-interval: 24   # 更新间隔，单位为小时
-
-# 自定 GEO 下载地址
-geox-url:
-  geoip: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat"
-  geosite: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat"
-  mmdb: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb"
-  asn: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb"
-
 # HTTP(S) 代理端口
 #port: 7890
 
@@ -50,6 +29,27 @@ unified-delay: true
 
 # RESTful API 监听地址
 external-controller: :9090
+
+# GEOIP 数据模式
+# 更改 geoip 使用文件，mmdb 或者 dat，可选 true/false,true为 dat，此项有默认值 false
+geodata-mode: true
+
+# GEO 文件加载模式
+# 可选的加载模式如下
+# standard：标准加载器
+# memconservative：专为内存受限 (小内存) 设备优化的加载器 (默认值)
+geodata-loader: memconservative
+
+# 自动更新 GEO
+geo-auto-update: true
+geo-update-interval: 24   # 更新间隔，单位为小时
+
+# 自定 GEO 下载地址
+geox-url:
+  geoip: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geoip.dat"
+  geosite: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/geosite.dat"
+  mmdb: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/country.mmdb"
+  asn: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb"
 
 # DNS 服务配置
 dns:
@@ -163,11 +163,16 @@ dns:
   nameserver-policy:
   
   # 明确标记为 CN 的域名，用下面的 DNS 解析
-    "geosite:cn",private,apple":
+    "geosite:cn": &cn_dns
     #- 223.5.5.5                           # 阿里 IPv4
     #- 119.29.29.29                        # 腾讯 DNSPod
       - https://dns.alidns.com/dns-query    # 阿里 DOH
       - https://doh.pub/dns-query           # 腾讯 DNSPod DOH
+      
+  # Apple 走国内DNS（避免iCloud异常）
+  # 私有域名走中国 DNS
+    "geosite:private": *cn_dns
+    "geosite:apple": *cn_dns
   
   # 明确标记为 非CN 的域名，用下面的 DNS 解析
     "geosite:geolocation-!cn":
