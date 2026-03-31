@@ -1,2 +1,5 @@
-
-DOMAIN-SUFFIX,dns.google
+# 本碎片只包含自己认为需要 Direct 的服务
+DOMAIN-SUFFIX,oray.com
+DOMAIN-SUFFIX,getui.com
+DOMAIN-SUFFIX,gexin.com
+DOMAIN-SUFFIX,ge.cn
