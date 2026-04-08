@@ -23,6 +23,7 @@
 
 # 后缀匹配
 DOMAIN-SUFFIX,oray.com
+DOMAIN-SUFFIX,oray.net
 DOMAIN-SUFFIX,getui.com
 DOMAIN-SUFFIX,gexin.com
 DOMAIN-SUFFIX,ge.cn
