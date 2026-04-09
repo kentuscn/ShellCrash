@@ -109,8 +109,7 @@ dns:
     - "*.msftconnecttest.com"      # Windows 网络检测服务避免 fake-ip
     - "*.apple.com"                # Apple 相关服务避免 fake-ip，防止 iCloud 解析问题
     - "*.windows.com"              # Windows 相关域名解析为真实 IP
-    - "*.oray.com"                 # 向日葵 相关域名解析为真实 IP
-    - "*.oray.net"                 # 向日葵 相关域名解析为真实 IP
+    - "*.oray.*"                   # 向日葵远程 相关域名解析为真实 IP
     
     # ===============================
     # 一、Cloudflare Tunnel / Argo Tunnel（必须真实 IP）
