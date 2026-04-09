@@ -22,8 +22,9 @@
 
 
 # 后缀匹配
-DOMAIN-SUFFIX,oray.com
-DOMAIN-SUFFIX,oray.net
+# 处理方式	,DIRECT（直连）/ ,PROXY（代理）/ ,REJECT（拒绝）
+DOMAIN-SUFFIX,oray.com,DIRECT
+DOMAIN-SUFFIX,oray.net,DIRECT
 DOMAIN-SUFFIX,getui.com
 DOMAIN-SUFFIX,gexin.com
 DOMAIN-SUFFIX,ge.cn
