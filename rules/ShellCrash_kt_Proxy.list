@@ -1,4 +1,96 @@
 # 本碎片只包含自己认为需要Proxy的服务
+# ====== 核心认知（非常重要）======
+# 必须记住：DOMAIN-SUFFIX ≠ 最优解
+# ------ 真正强的是 ------
+#   GEOSITE（域名分类）
+#   RULE-SET（远程规则）
+#   GEOIP（IP层）
+# ------ 使用建议 ------
+#   少用 KEYWORD
+#   多用 GEOSITE
+#   必加 GEOIP
+#   配 RULE-SET 自动更新
+# =========================
+
+# ---------------------------------------
+
+# ======= 域名类规则 ======
+
+# 精确匹配
+# 例如：DOMAIN,example.com
+
+
+# 后缀匹配
+# 处理方式	,DIRECT（直连）/ ,PROXY（代理）/ ,REJECT（拒绝）
+# DOMAIN-SUFFIX,oray.com,DIRECT
+# DOMAIN-SUFFIX,getui.com
+
+
+# 关键词匹配
+DOMAIN-KEYWORD,xf-yun.com
 DOMAIN-KEYWORD,mypikpak
 DOMAIN-KEYWORD,pikpak
 DOMAIN-KEYWORD,1024
+DOMAIN-KEYWORD,yahoo.com
+
+# 正则匹配
+# 例子：DOMAIN-REGEX,^.*\.example\.(com|net)$
+
+# ===========================================
+# ========== IP 类规则 =========== 
+# ==用于绕过 DNS 污染 / CDN 问题 ==
+
+# 单IP
+# 例：IP-CIDR,1.2.3.4/32
+
+# IP段
+# 例：IP-CIDR,1.2.3.0/24
+
+# IP-CIDR6（IPv6）
+# 例：IP-CIDR6,2400:3200::/32
+
+# GEOIP（国家级）
+# 例：中国：GEOIP,CN
+# 例：非中国：GEOIP,!CN
+# 例：中国：GEOIP,US
+
+# ===========================================
+# ======规则集（大规模规则核心）======
+
+# RULE-SET（远程规则）
+# RULE-SET,google,PROXY
+# 对应 provider
+# rule-providers:
+#   google:
+#     type: http
+#     behavior: domain
+#     url: https://...
+#     path: ./rules/google.yaml
+
+# GEOSITE（最强域名分类）
+# 例：GEOSITE,google
+# 例：GEOSITE,cn
+# 例：GEOSITE,openai
+# 优势：GEOSITE 因为有维护好的分类库，所以不需要像 DOMAIN-SUFFIX 需要自己维护。
+
+# ===========================================
+# ===== 端口 / 进程 / 网络层规则=====
+
+# 端口匹配
+# 例：DST-PORT,443
+# 例：SRC-PORT,3000
+
+# 进程匹配（Linux/Windows）
+# 例：PROCESS-NAME,chrome.exe
+# 例：PROCESS-NAME,node
+
+# UID 匹配（Linux）
+# 例：UID,1000
+
+# ===========================================
+# ====== 最终兜底规则 ======
+
+# MATCH（默认规则）
+# 例：默认走直连：MATCH,DIRECT
+# 或
+# 例：默认走代理：MATCH,PROXY
