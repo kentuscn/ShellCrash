@@ -31,7 +31,6 @@ DOMAIN-KEYWORD,mypikpak
 DOMAIN-KEYWORD,pikpak
 DOMAIN-KEYWORD,1024
 DOMAIN-KEYWORD,yahoo.com
-DOMAIN-KEYWORD,cloudflare
 
 # 正则匹配
 # 例子：DOMAIN-REGEX,^.*\.example\.(com|net)$
