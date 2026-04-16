@@ -30,6 +30,9 @@ unified-delay: true
 # RESTful API 监听地址
 external-controller: :9090
 
+# 访问 WEB UI 时必须输入密码 
+secret: fjwoejowafmlasfoiRTCFRY2026
+
 # GEOIP 数据模式
 # 更改 geoip 使用文件，mmdb 或者 dat，可选 true/false,true为 dat，此项有默认值 false
 geodata-mode: true
