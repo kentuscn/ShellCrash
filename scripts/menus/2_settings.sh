@@ -20,7 +20,7 @@ settings() {
         comp_box "\033[30;47m$SET_MENU_TITLE\033[0m"
         content_line "1) $SET_MENU_REDIR\t\033[36m$redir_mod$MENU_MOD\033[0m"
         content_line "2) $SET_MENU_DNS\t\033[36m$dns_mod\033[0m"
-        content_line "3) $SET_MENU_FW_FILTER"
+        content_line "3) $SET_MENU_FW_FILTER\t$SET_MENU_FW_FILTER_DESC"
         [ "$disoverride" != "1" ] && {
             content_line "4) $SET_MENU_SKIP_CERT\t\033[36m$skip_cert\033[0m"
             content_line "5) $SET_MENU_SNIFFER\t\033[36m$sniffer\033[0m"
@@ -203,8 +203,8 @@ settings() {
             exit 0
             ;;
         b)
-            comp_box "1) $SET_LANG_ZH" \
-                "2) $SET_LANG_EN" \
+            comp_box "1) 简体中文" \
+                "2) English" \
                 "" \
                 "0) $COMMON_BACK"
             read -r -p "$COMMON_INPUT> " num
@@ -265,6 +265,7 @@ set_redir_mod() {
         [ -z "$firewall_area" ] && firewall_area=1
         [ "$firewall_area" = 4 ] && redir_mod="$MENU_PURE_MOD"
         [ -z "$redir_mod" ] && redir_mod='Redir'
+        [ -z "$vm_redir" ] && vm_redir='OFF'
         firewall_area_dsc=$(echo "$SET_FW_AREA_DESC($bypass_host)" | cut -d'|' -f$firewall_area)
         comp_box "\033[33m$SET_REDIR_RESTART_HINT\033[0m" \
             "$SET_REDIR_CURRENT\033[47;30m$redir_mod$MENU_MOD\033[0m；  $SET_CORE_CURRENT\033[47;30m$crashcore\033[0m"
@@ -550,7 +551,6 @@ set_adv_config() {
 
 set_firewall_area() {
     while true; do
-        [ -z "$vm_redir" ] && vm_redir='OFF'
         comp_box "\033[33m$FW_AREA_NOTE_1\033[0m" \
             "\033[33m$FW_AREA_NOTE_2\033[0m" \
             "" \

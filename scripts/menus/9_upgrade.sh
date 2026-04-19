@@ -300,11 +300,11 @@ getcore() {
     # 获取在线内核文件
     line_break
     separator_line "="
-    content_line "$UPG_GETTING_CORE_TEXT"
+    content_line "${UPG_GETTING_CORE_TEXT_PREFIX}${crashcore}${UPG_GETTING_CORE_TEXT_SUFFIX}"
     core_webget
     case "$?" in
     0)
-        content_line "\033[32m$UPG_CORE_DOWNLOAD_OK_TEXT\033[0m"
+        content_line "\033[32m${UPG_CORE_DOWNLOAD_OK_TEXT_PREFIX}${crashcore}${UPG_CORE_DOWNLOAD_OK_TEXT_SUFFIX}\033[0m"
         separator_line "="
         sleep 1
         switch_core
@@ -338,7 +338,7 @@ checkcustcore() {
         release_date=$(cat "$TMPDIR"/github_api | grep '"published_at":' | awk -F '"' '{print $4}')
         update_date=$(cat "$TMPDIR"/github_api | grep '"updated_at":' | head -n 1 | awk -F '"' '{print $4}')
         echo "$cpucore" | grep -q 'mips' && cpu_type=mips || cpu_type=$cpucore
-        cat "$TMPDIR"/github_api | grep "browser_download_url" | grep -oE "https://github.com/${project}/releases/download.*linux.*${cpu_type}.*\.gz\"$" | sed 's/"//' >"$TMPDIR"/core.list
+        cat "$TMPDIR"/github_api | grep "browser_download_url" | grep -oE "https://github.com/${project}/releases/download.*linux.*${cpu_type}.*\.(gz|upx)\"$" | sed 's/"//' >"$TMPDIR"/core.list
         rm -rf "$TMPDIR"/github_api
 
         if [ -s "$TMPDIR"/core.list ]; then
@@ -391,6 +391,7 @@ checkcustcore() {
 setcustcore() {
     while true; do
         [ -z "$cpucore" ] && check_cpucore
+        [ -n "$custcorelink" ] && custcore="$(echo "$custcorelink" | sed 's#.*github.com##; s#/releases/download/#@#')"
         line_break
         separator_line "="
         content_line "\033[36m$UPG_CUSTOM_CORE_SOURCE\033[0m"
@@ -398,16 +399,17 @@ setcustcore() {
         content_line "\033[31m$UPG_CUSTOM_CORE_TASK_WARN\033[0m"
         content_line "\033[32m$UPG_CUSTOM_CORE_NET_WARN\033[0m"
         [ -n "$custcore" ] && {
-            content_line "$UPG_CUSTOM_CORE_CURRENT_TEXT\033[36m$custcore\033[0m"
+            content_line "$UPG_CUSTOM_CORE_CURRENT\033[36m$custcore\033[0m"
         }
         separator_line "="
         content_line "$UPG_CUSTOM_CORE_SELECT"
         separator_line "-"
-        btm_box "$UPG_CORE_MENU_1" \
-            "$UPG_CORE_MENU_2" \
-            "$UPG_CORE_MENU_3" \
-            "$UPG_CORE_MENU_4" \
-            "$UPG_CORE_MENU_9" \
+        btm_box "1) \033[36mMetaCubeX/mihomo\033[32m@release\033[0m$UPG_CUSTOM_CORE_MENU_OFFICIAL" \
+            "2) \033[36mvernesong/mihomo\033[32m@alpha\033[0m$UPG_CUSTOM_CORE_MENU_ALPHA" \
+            "3) \033[36mSagerNet/sing-box\033[32m@release\033[0m$UPG_CUSTOM_CORE_MENU_OFFICIAL" \
+            "4) \033[36mDustinWin/mihomo\033[0m$UPG_CUSTOM_CORE_MENU_MULTI" \
+            "5) \033[36mDustinWin/sing-boxr\033[0m$UPG_CUSTOM_CORE_MENU_MULTI" \
+            "9) $UPG_CUSTOM_CORE_LINK_MENU" \
             "" \
             "0) $COMMON_BACK"
         read -r -p "$COMMON_INPUT> " num
@@ -434,9 +436,15 @@ setcustcore() {
             checkcustcore
             ;;
         4)
-            project=juewuy/ShellCrash
-            api_tag=clash.premium.latest
-            crashcore=clashpre
+            project=DustinWin/proxy-tools
+            api_tag=mihomo
+            crashcore=meta
+            checkcustcore
+            ;;
+        5)
+            project=DustinWin/proxy-tools
+            api_tag=sing-box
+            crashcore=singboxr
             checkcustcore
             ;;
         9)
@@ -496,7 +504,6 @@ setcore() {
         [ -z "$crashcore" ] && crashcore="unknow"
         [ -z "$zip_type" ] && zip_type="tar.gz"
         echo "$crashcore" | grep -q 'singbox' && core_old=singbox || core_old=clash
-        [ -n "$custcorelink" ] && custcore="$(echo "$custcorelink" | sed 's#.*github.com##; s#/releases/download/#@#')"
 
         [ -z "$cpucore" ] && check_cpucore
 
@@ -506,22 +513,22 @@ setcore() {
             "" \
             "\033[33m$UPG_CORE_MENU_SELECT\033[0m"
 
-        content_line "$UPG_CORE_V1"
+        content_line "${UPG_CORE_V1_PREFIX}${meta_v}${UPG_CORE_V1_SUFFIX}"
         sub_content_line "$UPG_CORE_V1_DOC"
 
-        content_line "$UPG_CORE_V2"
+        content_line "${UPG_CORE_V2_PREFIX}${singboxr_v}${UPG_CORE_V2_SUFFIX}"
         sub_content_line "$UPG_CORE_V2_DOC"
 
         [ "$zip_type" = 'upx' ] && {
-            content_line "$UPG_CORE_V3"
+            content_line "${UPG_CORE_V3_PREFIX}${singbox_v}${UPG_CORE_V3_SUFFIX}"
             sub_content_line "$UPG_CORE_V3_DOC"
         }
         [ "$zip_type" = 'upx' ] && {
-            content_line "$UPG_CORE_V4"
+            content_line "${UPG_CORE_V4_PREFIX}${clash_v}${UPG_CORE_V4_SUFFIX}"
             sub_content_line "$UPG_CORE_V4_DOC"
         }
-        btm_box "$UPG_CORE_MENU_5" \
-            "$UPG_CORE_MENU_6" \
+        btm_box "${UPG_CORE_MENU_5_PREFIX}${zip_type}${UPG_CORE_MENU_5_SUFFIX}" \
+            "${UPG_CORE_MENU_6_PREFIX}${UPG_CORE_MENU_6_SUFFIX}" \
             "$UPG_CORE_MENU_7" \
             "$UPG_CORE_MENU_9" \
             "" \
@@ -588,7 +595,7 @@ getgeo() {
     content_line "$UPG_GEO_GETTING"
     get_bin "$TMPDIR"/"${geoname}" bin/geodata/"$geotype"
     if [ "$?" = "1" ]; then
-        content_line "\033[31m$UPG_GEO_FAIL\033[0m"
+        content_line "\033[31m$UPG_DOWNLOAD_FAIL\033[0m"
         error_down
     else
         echo "$geoname" | grep -Eq '.mrs|.srs|.tar.gz' && {
@@ -598,7 +605,7 @@ getgeo() {
         if echo "$geoname" | grep -Eq '.tar.gz'; then
             tar -zxf "$TMPDIR"/"${geoname}" ${tar_para} -C "$BINDIR"/"${geofile}" >/dev/null
             if [ $? -ne 0 ]; then
-                content_line "$UPG_GEO_EXTRACT_FAIL"
+                content_line "$UPG_EXTRACT_FAIL"
                 separator_line "="
                 sleep 1
                 line_break
@@ -609,7 +616,7 @@ getgeo() {
         else
             mv -f "$TMPDIR"/"${geoname}" "$BINDIR"/"${geofile}""${geoname}"
         fi
-        content_line "\033[32m$UPG_GEO_OK\033[0m"
+        content_line "\033[32m${UPG_GEO_OK_PREFIX}${geotype}${UPG_GEO_OK_SUFFIX}\033[0m"
         geo_v="$(echo "$geotype" | awk -F "." '{print $1}')_v"
         setconfig "$geo_v" "$GeoIP_v"
     fi
@@ -622,7 +629,7 @@ getcustgeo() {
     content_line "$UPG_GEO_LINKING"
     webget "$TMPDIR"/"$geoname" "$custgeolink"
     if [ "$?" = "1" ]; then
-        content_line "\033[31m$UPG_GEO_FAIL\033[0m"
+        content_line "\033[31m$UPG_DOWNLOAD_FAIL\033[0m"
         error_down
     else
         echo "$geoname" | grep -Eq '.mrs|.srs' && {
@@ -630,7 +637,7 @@ getcustgeo() {
             [ ! -d "$BINDIR"/ruleset ] && mkdir -p "$BINDIR"/ruleset
         }
         mv -f "$TMPDIR"/"${geoname}" "$BINDIR"/"${geofile}""${geoname}"
-        content_line "\033[32m$UPG_GEO_OK\033[0m"
+        content_line "\033[32m${UPG_GEO_OK_PREFIX}${geotype}${UPG_GEO_OK_SUFFIX}\033[0m"
         separator_line "="
     fi
     sleep 1
@@ -818,7 +825,7 @@ setgeo() {
             ;;
         9)
             while true; do
-                comp_box "\033[33m$UPG_GEO_CLEAN_HINT1\033[0m" \
+                comp_box "\033[33m${UPG_GEO_CLEAN_HINT1_PREFIX}${CRASHDIR}${UPG_GEO_CLEAN_HINT1_SUFFIX}\033[0m" \
                     "$UPG_GEO_CLEAN_HINT2"
                 btm_box "$UPG_GEO_CLEAN_CONFIRM" \
                     "0) $COMMON_BACK"
@@ -859,7 +866,7 @@ getdb() {
     content_line "$UPG_DB_GETTING"
     get_bin "$TMPDIR"/clashdb.tar.gz bin/dashboard/${db_type}.tar.gz
     if [ "$?" = "1" ]; then
-        content_line "\033[31m$UPG_GEO_FAIL\033[0m"
+        content_line "\033[31m$UPG_DOWNLOAD_FAIL\033[0m"
         error_down
         return 1
     else
@@ -867,7 +874,7 @@ getdb() {
         mkdir -p "$dbdir" >/dev/null
         tar -zxf "$TMPDIR/clashdb.tar.gz" ${tar_para} -C "$dbdir" >/dev/null
         if [ $? -ne 0 ]; then
-            content_line "$UPG_GEO_EXTRACT_FAIL"
+            content_line "$UPG_EXTRACT_FAIL"
             separator_line "="
             line_break
             sleep 1
@@ -912,7 +919,7 @@ dbdir() {
         fi
     elif [ -w /www ] && [ -n "$(pidof nginx)" ]; then
         comp_box "$UPG_DB_DIR_SELECT"
-        btm_box "$UPG_DB_DIR_1" \
+        btm_box "${UPG_DB_DIR_1_PREFIX}${CRASHDIR}${UPG_DB_DIR_1_SUFFIX}" \
             "$UPG_DB_DIR_2" \
             "" \
             "0) $COMMON_BACK"
@@ -1028,7 +1035,7 @@ getcrt() {
     content_line "$UPG_DB_GETTING"
     get_bin "$TMPDIR"/ca-certificates.crt bin/fix/ca-certificates.crt echooff
     if [ "$?" = "1" ]; then
-        content_line "\033[31m$UPG_GEO_FAIL\033[0m"
+        content_line "\033[31m$UPG_DOWNLOAD_FAIL\033[0m"
         error_down
     else
         [ "$systype" = 'mi_snapshot' ] && cp -f "$TMPDIR"/ca-certificates.crt "$CRASHDIR"/tools #镜像化设备特殊处理

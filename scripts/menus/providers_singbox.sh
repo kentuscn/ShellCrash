@@ -124,6 +124,9 @@ EOF
         "interval": "${interval}m",
         "timeout": "3s"
       },
+	  "override_dialer": {
+        "domain_resolver": "$dns_proxy_server"
+	  },
       "override_tls": {
         "enabled": true,
         "insecure": $override_tls
