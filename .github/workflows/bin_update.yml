@@ -143,8 +143,8 @@ jobs:
     - name: Sync master/dev files into update branch
       run: |
         # 只同步文件内容，不带任何 git 状态
-        git archive --format=tar origin/master ShellCrash.tar.gz version install.sh install_en.sh | tar -x -C .
-        git archive --format=tar origin/dev public rules | tar -x -C .
+        git archive --format=tar origin/master ShellCrash.tar.gz version | tar -x -C .
+        git archive --format=tar origin/dev install.sh install_en.sh public rules | tar -x -C .
 
     - name: Rebuild update branch with no history
       run: |
