@@ -23,7 +23,8 @@
 # 后缀匹配
 # DOMAIN-SUFFIX,oray.com
 # DOMAIN-SUFFIX,getui.com
-
+DOMAIN-SUFFIX,api-drive.mypikpak.com
+DOMAIN-SUFFIX,api-drive.mypikpak.net
 
 # 关键词匹配
 DOMAIN-KEYWORD,mypikpak
