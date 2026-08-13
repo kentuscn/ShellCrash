@@ -69,16 +69,20 @@ forwhat() {
             fi
 
             ckcmd systemctl && [ "$(cat /proc/1/comm)" = "systemd" ] && systemctl enable shellcrash.service >/dev/null 2>&1
+            grep -q 's6' /proc/1/comm && enable_s6_autostart_marks
             rm -rf "$CRASHDIR"/.dis_startup
             autostart=enable
             # 检测IP转发
             if [ "$(cat /proc/sys/net/ipv4/ip_forward)" = "0" ]; then
                 separator_line "-"
                 content_line "\033[33m$UG_IP_FORWARD_WARN\033[0m"
+				[ "$systype" = 'container' ] && content_line "\033[31m$UG_CONTAINER_WARN\033[0m"
                 read -r -p "$COMMON_INPUT_R" res
                 [ "$res" = 1 ] && {
-                    content_line 'net.ipv4.ip_forward = 1' >>/etc/sysctl.conf
-                    sysctl -w net.ipv4.ip_forward=1
+                    grep -q '^net\.ipv4\.ip_forward' /etc/sysctl.conf \
+                    && sed -i 's/^net\.ipv4\.ip_forward.*/net.ipv4.ip_forward = 1/' /etc/sysctl.conf \
+                    || echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+                    sysctl -p /etc/sysctl.conf
                 }
             fi
             # 禁止docker启用的net.bridge.bridge-nf-call-iptables
@@ -120,7 +124,7 @@ userguide() {
         read -r -p "$COMMON_INPUT_R" res
         [ "$res" = 1 ] && {
             BINDIR=/tmp/ShellCrash
-            sed -i "s#BINDIR=.*#BINDIR=$BINDIR" "$CRASHDIR"/configs/command.env
+            sed -i "s#BINDIR=.*#BINDIR=$BINDIR#" "$CRASHDIR"/configs/command.env
         }
     fi
 

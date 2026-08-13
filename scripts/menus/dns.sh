@@ -95,13 +95,13 @@ set_dns_mod() {
                     ;;
                 *)
                     if [ "$num" -ge 1 ] && [ "$num" -lt 65535 ]; then
-                        if ckcmd netstat && netstat -ntul | grep -q ":$num "; then
+                        if netstat -ntul 2>/dev/null | grep -q ":$num " || ss -ntul 2>/dev/null | grep -q ":$num "; then
                             dns_redir_port="$num"
                             setconfig dns_redir_port "$dns_redir_port"
                             common_success
                             break
                         else
-                            msg_alert
+                            msg_alert "\033[33m$DNS_REDIR_NO_SERVICE\033[0m"
                         fi
                     else
                         errornum

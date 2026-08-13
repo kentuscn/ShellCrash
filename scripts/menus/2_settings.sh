@@ -225,8 +225,8 @@ settings() {
             exit 0
             ;;
         c)
-            comp_box "1) New Design by Sofia-Riese" \
-                "2) TUI-lite" \
+            comp_box "1) $SET_TUI_1" \
+                "2) $SET_TUI_2" \
                 "" \
                 "0) $COMMON_BACK"
             read -r -p "$COMMON_INPUT> " num
@@ -569,8 +569,6 @@ set_firewall_area() {
         [1-4])
             if [ "$firewall_area" -ge 4 ]; then
                 redir_mod=''
-            else
-                redir_mod=Redir
             fi
             firewall_area="$num"
             setconfig firewall_area "$firewall_area"
@@ -625,6 +623,8 @@ set_firewall_vm() {
             common_success
         else
             msg_alert "\033[33m$VM_NO_NET_DETECTED\033[0m"
+			set_firewall_vm
+			return
         fi
 
         ;;
@@ -639,16 +639,12 @@ set_firewall_vm() {
     3)
         vm_redir=OFF
         vm_ipv4=''
-        common_success
         ;;
-    *) ;;
+    *) return ;;
     esac
-    case "$num" in
-    1-3)
-        setconfig vm_redir "$vm_redir"
-        setconfig vm_ipv4 "'$vm_ipv4'"
-        ;;
-    esac
+	common_success
+	setconfig vm_redir "$vm_redir"
+	setconfig vm_ipv4 "'$vm_ipv4'"
 }
 
 # ipv6设置

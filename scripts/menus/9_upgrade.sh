@@ -447,6 +447,12 @@ setcustcore() {
             crashcore=singboxr
             checkcustcore
             ;;
+        6)
+            project=vernesong/mihomo-oix
+            api_tag=Pre-Alpha
+            crashcore=meta
+            checkcustcore
+            ;;
         9)
             comp_box "$UPG_CUSTOM_CORE_LINK_HINT" \
                 "$UPG_CUSTOM_CORE_LINK_HINT2" \
@@ -667,21 +673,21 @@ checkcustgeo() {
             "" | 0)
                 break
                 ;;
-            [1-99])
-                if [ "$num" -le "$(wc -l <"$TMPDIR"/geo.list)" ]; then
+            *[!0-9]*)
+                errornum
+                ;;
+            *)
+                if [ "$num" -le "$(wc -l < "$TMPDIR/geo.list")" ]; then
                     geotype=$(sed -n "$num"p "$TMPDIR"/geo.list)
-                    [ -n "$(echo "$geotype" | grep -oiE 'GeoSite.*dat')" ] && geoname=GeoSite.dat
-                    [ -n "$(echo "$geotype" | grep -oiE 'Country.*mmdb')" ] && geoname=Country.mmdb
-                    [ -n "$(echo "$geotype" | grep -oiE '.*(.srs|.mrs)')" ] && geoname=$geotype
+                    echo "$geotype" | grep -qiE 'GeoSite\.dat' && geoname=GeoSite.dat
+                    echo "$geotype" | grep -qiE 'Country\.mmdb' && geoname=Country.mmdb
+                    echo "$geotype" | grep -qiE '\.(srs|mrs)$' && geoname="$geotype"
                     custgeolink=https://github.com/${project}/releases/download/${release_tag}/${geotype}
                     getcustgeo
                 else
                     errornum
                     break
                 fi
-                ;;
-            *)
-                errornum
                 ;;
             esac
         else
@@ -827,7 +833,7 @@ setgeo() {
             while true; do
                 comp_box "\033[33m${UPG_GEO_CLEAN_HINT1_PREFIX}${CRASHDIR}${UPG_GEO_CLEAN_HINT1_SUFFIX}\033[0m" \
                     "$UPG_GEO_CLEAN_HINT2"
-                btm_box "$UPG_GEO_CLEAN_CONFIRM" \
+                btm_box "1) $UPG_GEO_CLEAN_CONFIRM" \
                     "0) $COMMON_BACK"
                 read -r -p "$COMMON_INPUT> " res
                 case "$res" in
@@ -835,8 +841,8 @@ setgeo() {
                     break
                     ;;
                 1)
-                    for file in cn_ip.txt cn_ipv6.txt Country.mmdb GeoSite.dat geoip.db geosite.db; do
-                        rm -rf $CRASHDIR/$file
+                    for file in cn_ip.txt cn_ipv6.txt *.mmdb *.metadb *.dat geoip.db geosite.db; do
+                        rm -rf "$CRASHDIR"/$file
                     done
                     for var in Country_v cn_mini_v china_ip_list_v china_ipv6_list_v geosite_v geoip_cn_v geosite_cn_v mrs_geosite_cn_v srs_geoip_cn_v srs_geosite_cn_v mrs_v srs_v; do
                         setconfig $var

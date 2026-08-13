@@ -21,7 +21,7 @@ prepare_clash_base_config() {
             if [ -n "$ecs_address" ];then
                 dns_fallback=$(echo "$dns_fallback, " | sed "s|, |#ecs-override=true\&ecs=$ecs_address, |g" | sed 's|, $||')
             else
-                logger "自动获取ecs网段失败！"
+                logger "自动获取ecs网段失败！" 33
             fi
         }
     }
@@ -37,7 +37,7 @@ dns:
   default-nameserver: [ $dns_resolver ]
   direct-nameserver: [ $dns_nameserver ]
   enhanced-mode: fake-ip
-  fake-ip-range: 28.0.0.0/8
+  fake-ip-range: 198.18.0.0/15
   fake-ip-range6: fc00::/16
   fake-ip-filter:
 EOF

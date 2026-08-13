@@ -592,10 +592,17 @@ testcommand() {
         2)
             line_break
             echo "==========================================================="
-            netstat -ntulp | grep 53
+            if ckcmd netstat;then
+                netstat -ntulp | grep 53
+			elif ckcmd ss;then
+                ss -ntulp | grep 53
+			else
+                echo -e "Neither net-tools nor iproute2 is installed. Please install one of these packages and try again."
+            fi
             echo
             echo -e "$TOOLS_NETSTAT_HINT"
             echo "==========================================================="
+			sleep 2
             ;;
         3)
             line_break
@@ -684,6 +691,7 @@ testcommand() {
 }
 
 debug() {
+	rm -f "$CRASHDIR"/\.start_error #移除自启失败标记
     echo "$crashcore" | grep -q 'singbox' && config_tmp="$TMPDIR"/jsons || config_tmp="$TMPDIR"/config.yaml
     comp_box "\033[36m$TOOLS_DEBUG_WARN1\033[0m" \
         "${TOOLS_DEBUG_WARN2_PREFIX}\033[32m$TMPDIR/debug.log\033[0m${TOOLS_DEBUG_WARN2_SUFFIX}" \
@@ -705,7 +713,7 @@ debug() {
     0) ;;
     1)
         "$CRASHDIR"/start.sh stop
-        "$CRASHDIR"/start.sh bfstart
+        "$CRASHDIR"/starts/bfstart.sh
         if echo "$crashcore" | grep -q 'singbox'; then
             "$TMPDIR"/CrashCore run -D "$BINDIR" -C "$TMPDIR"/jsons &
             {

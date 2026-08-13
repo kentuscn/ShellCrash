@@ -1,8 +1,9 @@
 #!/bin/sh
 # Copyright (C) Juewuy
 
- #修饰singbox配置文件
-parse_singbox_dns() { #dns转换
+#修饰singbox配置文件
+
+parse_singbox_dns() { #dns转换工具
     first_dns=$(echo "$1" | cut -d',' -f1 | cut -d' ' -f1)
     type=""
     server=""
@@ -41,8 +42,8 @@ parse_singbox_dns() { #dns转换
     # 输出
     echo '"type": "'"$type"'", "server": "'"$server"'", "server_port": '"$port"','
 }
-extract_base_jsons() {
-    #提取配置文件以获得outbounds.json,providers.json及route.json
+
+extract_base_jsons() { #提取配置文件以获得outbounds.json,providers.json及route.json
     "$TMPDIR"/CrashCore format -c $core_config >"$TMPDIR"/format.json
     echo '{' >"$TMPDIR"/jsons/outbounds.json
     echo '{' >"$TMPDIR"/jsons/route.json
@@ -52,9 +53,34 @@ extract_base_jsons() {
         cat "$TMPDIR"/format.json | sed -n '/^  "providers":/,/^  "[a-z]/p' | sed '$d' >>"$TMPDIR"/jsons/providers.json
     }
     cat "$TMPDIR"/format.json | sed -n '/"route":/,/^\(  "[a-z]\|}\)/p' | sed '$d' >>"$TMPDIR"/jsons/route.json
+	#清理PASS规则
+    sed -i 's/"PASS"/"DIRECT"/g' "$TMPDIR"/jsons/outbounds.json
 }
 
 generate_basic_jsons() {
+	#适配1.14+版本
+	if [ "$(printf '%s' "$core_v" | cut -d. -f2)" -lt 14 ];then
+		preferred='"ip_accept_any": true,'
+		detour_direct='"download_detour": "DIRECT"'
+	else
+		preferred='"preferred_by": [ "hosts" ],'
+		detour_direct='"http_client": "detour_direct"'
+		#生成http_clients.json
+		cat >"$TMPDIR"/jsons/http_clients.json <<EOF
+	{
+	  "http_clients": [
+		{
+		  "tag": "detour_proxy",
+		  "detour": "GLOBAL"
+		},
+		{
+		  "tag": "detour_direct",
+		  "detour": "DIRECT"
+		}
+	  ]
+	}
+EOF
+	fi
     #生成endpoints.json
     [ "$ts_service" = ON ] || [ "$wg_service" = ON ] && [ "$zip_type" != upx ] && {
         . "$CRASHDIR"/configs/gateway.cfg
@@ -92,16 +118,17 @@ EOF
     ],
     "rules": [
       {
-        "ip_accept_any": true,
+        $preferred
         "server": "hosts"
       }
-    ]}
+    ]
+  }
 }
 EOF
     fi
 }
 
-prepare_dns_config() {
+gen_dns() {
     #生成dns.json
     [ "$ipv6_dns" != "OFF" ] && strategy='prefer_ipv4' || strategy='ipv4_only'
     #获取detour出口
@@ -112,7 +139,11 @@ prepare_dns_config() {
     #ecs优化
     [ "$ecs_subnet" = ON ] && {
         . "$CRASHDIR"/libs/get_ecsip.sh
-        client_subnet='"client_subnet": "'"$ecs_address"'",'
+        if [ -n "$ecs_address" ]; then
+            client_subnet='"client_subnet": "'"$ecs_address"'",'
+        else
+            logger "自动获取ecs网段失败！" 33
+        fi
     }
     #根据dns模式生成
     [ "$dns_mod" = "redir_host" ] && {
@@ -127,7 +158,7 @@ prepare_dns_config() {
         [ -n "$fake_ip_filter_domain" ] && fake_ip_filter_domain="{ \"domain\": [$fake_ip_filter_domain], \"server\": \"dns_direct\" },"
         [ -n "$fake_ip_filter_suffix" ] && fake_ip_filter_suffix="{ \"domain_suffix\": [$fake_ip_filter_suffix], \"server\": \"dns_direct\" },"
         [ -n "$fake_ip_filter_regex" ] && fake_ip_filter_regex="{ \"domain_regex\": [$fake_ip_filter_regex], \"server\": \"dns_direct\" },"
-        proxy_dns='{ "query_type": ["A", "AAAA"], "server": "dns_fakeip", "strategy": "'"$strategy"'", "rewrite_ttl": 1 }'
+        proxy_dns='{ "query_type": ["A", "AAAA"], "server": "dns_fakeip", "rewrite_ttl": 1 }'
         #mix模式插入fakeip过滤规则
         [ "$dns_mod" = "mix" ] && direct_dns='{ "rule_set": ["cn"], "server": "dns_direct" },'
     }
@@ -137,11 +168,8 @@ prepare_dns_config() {
     }
     #防泄露设置
     [ "$dns_protect" = "OFF" ] && sed -i 's/"server": "dns_proxy"/"server": "dns_direct"/g' "$TMPDIR"/jsons/route.json
-}
-
-generate_dns_related_jsons() {
     #生成add_rule_set.json
-    [ "$dns_mod" = "mix" ] || [ "$dns_mod" = "route" ] && ! grep -Eq '"tag" *:[[:space:]]*"cn"' "$CRASHDIR"/jsons/*.json && {
+    [ "$dns_mod" = "mix" ] || [ "$dns_mod" = "route" ] && ! grep -Eq '"tag" *:[[:space:]]*"cn"' "$CRASHDIR"/jsons/*.json && ! grep -Eq '"tag"[[:space:]]*:[[:space:]]*\[[^]]*"cn"' "$CRASHDIR"/jsons/*.json && {
         [ "$crashcore" = "singboxr" ] && srs_path='"path": "./ruleset/cn.srs",'
         cat >"$TMPDIR"/jsons/add_rule_set.json <<EOF
 {
@@ -153,7 +181,7 @@ generate_dns_related_jsons() {
         "format": "binary",
         $srs_path
         "url": "https://testingcf.jsdelivr.net/gh/DustinWin/ruleset_geodata@sing-box-ruleset/cn.srs",
-        "download_detour": "DIRECT"
+        $detour_direct
       }
     ]
   }
@@ -180,7 +208,7 @@ EOF
       {
         "tag": "dns_fakeip",
         "type": "fakeip",
-        "inet4_range": "28.0.0.0/8",
+        "inet4_range": "198.18.0.0/15",
         "inet6_range": "fc00::/16"
       },
       {
@@ -195,18 +223,17 @@ EOF
       }
     ],
     "rules": [
-      { "clash_mode": "Direct", "server": "dns_direct", "strategy": "$strategy" },
-      { "domain_suffix": ["services.googleapis.cn"], "server": "dns_fakeip", "strategy": "$strategy", "rewrite_ttl": 1 },
+      { "clash_mode": "Direct", "server": "dns_direct" },
+      { "domain_suffix": ["services.googleapis.cn"], "server": "dns_fakeip", "rewrite_ttl": 1 },
       $fake_ip_filter_domain
       $fake_ip_filter_suffix
       $fake_ip_filter_regex
-      { "clash_mode": "Global", "query_type": ["A", "AAAA"], "server": "$global_dns", "strategy": "$strategy", "rewrite_ttl": 1 },
+      { "clash_mode": "Global", "query_type": ["A", "AAAA"], "server": "$global_dns", "rewrite_ttl": 1 },
       $direct_dns
       $proxy_dns
     ],
     "final": "dns_proxy",
     "strategy": "$strategy",
-    "independent_cache": true,
     $client_subnet
     "reverse_mapping": true
   }
@@ -214,10 +241,11 @@ EOF
 EOF
 }
 
-generate_route_and_inbounds_jsons() {
+gen_outbounds() {
     #生成add_route.json
     #域名嗅探配置
-    [ "$sniffer" != OFF ] && sniffer_set='{ "domain_suffix": [ "push.apple.com" ], "rule_set": [ "telegramip" ], "domain": [ "Mijia Cloud" ], "invert": true, "action": "sniff", "timeout": "500ms" },'
+    grep -q 'telegramip' "$TMPDIR"/jsons/route.json && telegramip_set=' "rule_set": [ "telegramip" ],'
+    [ "$sniffer" != OFF ] && sniffer_set='{ "domain_suffix": [ "push.apple.com" ],'"$telegramip_set"' "domain": [ "Mijia Cloud" ], "invert": true, "action": "sniff", "timeout": "500ms" },'
     [ "$ts_service" = ON ] && tailscale_set='{ "inbound": [ "ts-ep" ], "port": 53, "action": "hijack-dns" },'
     cat >"$TMPDIR"/jsons/add_route.json <<EOF
 {
@@ -225,16 +253,18 @@ generate_route_and_inbounds_jsons() {
     "default_domain_resolver": "dns_resolver",
     "default_mark": $routing_mark,
     "rules": [
-      { "inbound": [ "dns-in" ], "action": "hijack-dns" },
       $tailscale_set
       $sniffer_set
+      { "inbound": [ "dns-in" ], "action": "hijack-dns" },
       { "clash_mode": "Direct" , "outbound": "DIRECT" },
       { "clash_mode": "Global" , "outbound": "GLOBAL" }
     ]
   }
 }
 EOF
-    #生成certificate.json
+}
+
+gen_certificate() { #生成certificate.json
     cat >"$TMPDIR"/jsons/certificate.json <<EOF
 {
   "certificate": {
@@ -242,7 +272,9 @@ EOF
   }
 }
 EOF
-    #生成inbounds.json
+}
+
+gen_inbounds() { #生成inbounds.json
     [ -n "$authentication" ] && {
         username=$(echo $authentication | awk -F ':' '{print $1}') #混合端口账号密码
         password=$(echo $authentication | awk -F ':' '{print $2}')
@@ -295,7 +327,7 @@ EOF
       "interface_name": "utun",
       "address": [
         $ipv6_address
-        "28.0.0.1/30"
+        "198.18.0.1/15"
       ],
       "auto_route": false,
       "stack": "system"
@@ -306,8 +338,7 @@ EOF
     fi
 }
 
-generate_outbounds_and_experimental_jsons() {
-    #生成add_outbounds.json
+add_outbounds() { #生成add_outbounds.json
     grep -qE '"tag": "DIRECT"' "$TMPDIR"/jsons/outbounds.json || add_direct='{ "tag": "DIRECT", "type": "direct" }'
     grep -qE '"tag": "REJECT"' "$TMPDIR"/jsons/outbounds.json || add_reject='{ "tag": "REJECT", "type": "block" }'
     grep -qE '"tag": "GLOBAL"' "$TMPDIR"/jsons/outbounds.json || {
@@ -325,7 +356,9 @@ generate_outbounds_and_experimental_jsons() {
   ]
 }
 EOF
-    #生成experimental.json
+}
+
+gen_experimental() { #生成experimental.json
     [ "$crashcore" = "singboxr" ] && urltest_unified_delay=',"urltest_unified_delay": true'
     cat >"$TMPDIR"/jsons/experimental.json <<EOF
 {
@@ -342,8 +375,7 @@ EOF
 EOF
 }
 
-generate_custom_rules_json() {
-    #生成自定义规则文件
+generate_custom_rules_json() { #生成自定义规则文件
     [ -n "$(grep -Ev ^# "$CRASHDIR"/yamls/rules.yaml 2>/dev/null)" ] && {
         cat "$CRASHDIR"/yamls/rules.yaml |
             sed '/#.*/d' |
@@ -368,11 +400,11 @@ generate_custom_rules_json() {
     }
 }
 
-normalize_and_finalize_jsons() {
+normalize_and_finalize_jsons() { #修饰文件
     #清理route.json中的process_name规则以及"auto_detect_interface"
     sed -i '/"process_name": \[/,/],$/d' "$TMPDIR"/jsons/route.json
     sed -i '/"process_name": "[^"]*",/d' "$TMPDIR"/jsons/route.json
-    sed -i 's/"auto_detect_interface": true/"auto_detect_interface": false/g' "$TMPDIR"/jsons/route.json
+	sed -i 's/"auto_detect_interface": true/"auto_detect_interface": false/g' "$TMPDIR"/jsons/route.json
     #跳过本地tls证书验证
     if [ "$skip_cert" != "OFF" ]; then
         sed -i 's/"insecure": false/"insecure": true/' "$TMPDIR"/jsons/outbounds.json "$TMPDIR"/jsons/providers.json 2>/dev/null
@@ -390,11 +422,11 @@ normalize_and_finalize_jsons() {
     done
 }
 
-link_custom_jsons() {
+link_custom_jsons() { #合并文件
     #加载自定义配置文件
     mkdir -p "$TMPDIR"/jsons_base
     #以下为覆盖脚本的自定义文件
-    for char in log dns ntp certificate experimental; do
+    for char in log dns ntp certificate http_clients experimental; do
         [ -s "$CRASHDIR"/jsons/${char}.json ] && {
             ln -sf "$CRASHDIR"/jsons/${char}.json "$TMPDIR"/jsons/cust_${char}.json
             mv -f "$TMPDIR"/jsons/${char}.json "$TMPDIR"/jsons_base #如果重复则临时备份
@@ -408,8 +440,7 @@ link_custom_jsons() {
     done
 }
 
-validate_and_restore_custom_jsons() {
-    #测试自定义配置文件
+test_json() { #测试自定义配置文件
     if ! error=$("$TMPDIR"/CrashCore check -D "$BINDIR" -C "$TMPDIR"/jsons 2>&1); then
         echo $error
         error_file=$(echo $error | grep -Eo 'cust.*\.json' | sed 's/cust_//g')
@@ -422,17 +453,19 @@ validate_and_restore_custom_jsons() {
     fi
 }
 
-modify_json() {
+modify_json() { #入口
     extract_base_jsons
     generate_basic_jsons
-    prepare_dns_config
-    generate_dns_related_jsons
-    generate_route_and_inbounds_jsons
-    generate_outbounds_and_experimental_jsons
+    gen_dns
+    gen_outbounds
+	gen_certificate
+	gen_inbounds
+    add_outbounds
+	gen_experimental
     generate_custom_rules_json
     normalize_and_finalize_jsons
     link_custom_jsons
-    validate_and_restore_custom_jsons
+    test_json
     #清理缓存
     rm -rf "$TMPDIR"/*.json
     rm -rf "$TMPDIR"/jsons_base
