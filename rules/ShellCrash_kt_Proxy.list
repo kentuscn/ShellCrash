@@ -25,6 +25,7 @@
 # DOMAIN-SUFFIX,getui.com
 DOMAIN-SUFFIX,api-drive.mypikpak.com
 DOMAIN-SUFFIX,api-drive.mypikpak.net
+DOMAIN-SUFFIX,reuters.com
 
 # 关键词匹配
 DOMAIN-KEYWORD,mypikpak
