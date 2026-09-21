@@ -26,6 +26,7 @@
 DOMAIN-SUFFIX,api-drive.mypikpak.com
 DOMAIN-SUFFIX,api-drive.mypikpak.net
 DOMAIN-SUFFIX,reuters.com
+DOMAIN-SUFFIX,cmegroup.com
 
 # 关键词匹配
 DOMAIN-KEYWORD,mypikpak
