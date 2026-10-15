@@ -26,13 +26,14 @@
 DOMAIN-SUFFIX,api-drive.mypikpak.com
 DOMAIN-SUFFIX,api-drive.mypikpak.net
 DOMAIN-SUFFIX,reuters.com
-DOMAIN-SUFFIX,cmegroup.com
+# DOMAIN-SUFFIX,cmegroup.com
 
 # 关键词匹配
 DOMAIN-KEYWORD,mypikpak
 DOMAIN-KEYWORD,pikpak
 DOMAIN-KEYWORD,1024
 DOMAIN-KEYWORD,yahoo.com
+DOMAIN-KEYWORD,cmegroup
 
 # 正则匹配
 # 例子：DOMAIN-REGEX,^.*\.example\.(com|net)$
