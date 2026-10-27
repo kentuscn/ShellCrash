@@ -5,6 +5,8 @@
 [ -z "$CRASHDIR" ] && CRASHDIR=$( cd $(dirname $0);cd ..;pwd)
 . "$CRASHDIR"/libs/get_config.sh
 . "$CRASHDIR"/libs/check_cmd.sh
+#停止IPv6前缀监听
+[ -f "$CRASHDIR"/starts/fw_ipv6_watch.sh ] && /bin/sh "$CRASHDIR"/starts/fw_ipv6_watch.sh stop
 . "$CRASHDIR"/starts/fw_getlanip.sh && getlanip #获取局域网host地址
 #缺省值
 [ -z "$common_ports" ] && common_ports='ON'
@@ -48,18 +50,18 @@ ckcmd iptables && {
         $iptable -t mangle -D OUTPUT -p udp -j shellcrash_mark_out 2>/dev/null
     fi
     #redir
-    $iptable -t nat -D PREROUTING -p tcp -d 198.18.0.0/15 -j shellcrash 2>/dev/null
-    $iptable -t nat -D OUTPUT -p tcp -d 198.18.0.0/15 -j shellcrash_out 2>/dev/null
+    $iptable -t nat -D PREROUTING -p tcp -d $fakeip4 -j shellcrash 2>/dev/null
+    $iptable -t nat -D OUTPUT -p tcp -d $fakeip4 -j shellcrash_out 2>/dev/null
     #vm_dns
     $iptable -t nat -D PREROUTING -p tcp --dport 53 -j shellcrash_vm_dns 2>/dev/null
     $iptable -t nat -D PREROUTING -p udp --dport 53 -j shellcrash_vm_dns 2>/dev/null
     #vm_redir
-    $iptable -t nat -D PREROUTING -p tcp -d 198.18.0.0/15 -j shellcrash_vm 2>/dev/null
+    $iptable -t nat -D PREROUTING -p tcp -d $fakeip4 -j shellcrash_vm 2>/dev/null
     #TPROXY&tun
-    $iptable -t mangle -D PREROUTING -p tcp -d 198.18.0.0/15 -j shellcrash_mark 2>/dev/null
-    $iptable -t mangle -D PREROUTING -p udp -d 198.18.0.0/15 -j shellcrash_mark 2>/dev/null
-    $iptable -t mangle -D OUTPUT -p tcp -d 198.18.0.0/15 -j shellcrash_mark_out 2>/dev/null
-    $iptable -t mangle -D OUTPUT -p udp -d 198.18.0.0/15 -j shellcrash_mark_out 2>/dev/null
+    $iptable -t mangle -D PREROUTING -p tcp -d $fakeip4 -j shellcrash_mark 2>/dev/null
+    $iptable -t mangle -D PREROUTING -p udp -d $fakeip4 -j shellcrash_mark 2>/dev/null
+    $iptable -t mangle -D OUTPUT -p tcp -d $fakeip4 -j shellcrash_mark_out 2>/dev/null
+    $iptable -t mangle -D OUTPUT -p udp -d $fakeip4 -j shellcrash_mark_out 2>/dev/null
     $iptable -t mangle -D PREROUTING -m mark --mark $fwmark -p tcp -j TPROXY --on-port $tproxy_port 2>/dev/null
     $iptable -t mangle -D PREROUTING -m mark --mark $fwmark -p udp -j TPROXY --on-port $tproxy_port 2>/dev/null
     #tun
@@ -119,15 +121,15 @@ ckcmd ip6tables && {
         $ip6table -t mangle -D OUTPUT -p udp -j shellcrashv6_mark_out 2>/dev/null
     fi
     #redir
-    $ip6table -t nat -D PREROUTING -p tcp -d fc00::/16 -j shellcrashv6 2>/dev/null
-    $ip6table -t nat -D OUTPUT -p tcp -d fc00::/16 -j shellcrashv6_out 2>/dev/null
+    $ip6table -t nat -D PREROUTING -p tcp -d $fakeip6 -j shellcrashv6 2>/dev/null
+    $ip6table -t nat -D OUTPUT -p tcp -d $fakeip6 -j shellcrashv6_out 2>/dev/null
     $ip6table -D INPUT -p tcp --dport 53 -j REJECT 2>/dev/null
     $ip6table -D INPUT -p udp --dport 53 -j REJECT 2>/dev/null
     #mark
-    $ip6table -t mangle -D PREROUTING -p tcp -d fc00::/16 -j shellcrashv6_mark 2>/dev/null
-    $ip6table -t mangle -D PREROUTING -p udp -d fc00::/16 -j shellcrashv6_mark 2>/dev/null
-    $ip6table -t mangle -D OUTPUT -p tcp -d fc00::/16 -j shellcrashv6_mark_out 2>/dev/null
-    $ip6table -t mangle -D OUTPUT -p udp -d fc00::/16 -j shellcrashv6_mark_out 2>/dev/null
+    $ip6table -t mangle -D PREROUTING -p tcp -d $fakeip6 -j shellcrashv6_mark 2>/dev/null
+    $ip6table -t mangle -D PREROUTING -p udp -d $fakeip6 -j shellcrashv6_mark 2>/dev/null
+    $ip6table -t mangle -D OUTPUT -p tcp -d $fakeip6 -j shellcrashv6_mark_out 2>/dev/null
+    $ip6table -t mangle -D OUTPUT -p udp -d $fakeip6 -j shellcrashv6_mark_out 2>/dev/null
     $ip6table -D INPUT -p udp --dport 443 $set_cn_ip -j REJECT 2>/dev/null
     $ip6table -t mangle -D PREROUTING -m mark --mark $fwmark -p tcp -j TPROXY --on-port $tproxy_port 2>/dev/null
     $ip6table -t mangle -D PREROUTING -m mark --mark $fwmark -p udp -j TPROXY --on-port $tproxy_port 2>/dev/null
@@ -172,4 +174,3 @@ ckcmd nft && nft delete table inet shellcrash >/dev/null 2>&1
 [ -s /etc/init.d/firewall.bak ] && mv -f /etc/init.d/firewall.bak /etc/init.d/firewall
 #others
 sed -i '/shellcrash-dns-repair/d' /etc/resolv.conf 2>/dev/null
-

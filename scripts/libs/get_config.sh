@@ -2,6 +2,7 @@
 # 检查配置文件
 [ -z "$TASKCFGDIR" ] && TASKCFGDIR="$CRASHDIR"/configs/task
 [ -f "$CRASHDIR"/configs/ShellCrash.cfg ] || . "$CRASHDIR"/init.sh >/dev/null 2>&1
+[ -f "$CRASHDIR"/configs/directories.env ] && . "$CRASHDIR"/configs/directories.env >/dev/null 2>&1
 . "$CRASHDIR"/configs/command.env >/dev/null 2>&1
 . "$CRASHDIR"/configs/ShellCrash.cfg
 
@@ -14,6 +15,9 @@
 [ -z "$fwmark" ] && fwmark="$redir_port"
 routing_mark=$((fwmark + 2))
 [ -z "$table" ] && table=100
+
+[ -z "$fakeip4" ] && fakeip4="198.18.0.0/15"
+[ -z "$fakeip6" ] && fakeip6="2001:2::/64"
 
 [ -z "$dns_nameserver" ] && {
     dns_nameserver='223.5.5.5, 1.2.4.8'

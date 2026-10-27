@@ -7,7 +7,7 @@ prepare_clash_base_config() {
     external="external-controller: 0.0.0.0:$db_port"
     if [ "$redir_mod" = "Mix" -o "$redir_mod" = "Tun" ]; then
         [ "$crashcore" = 'meta' ] && tun_meta=', device: utun, auto-route: false, auto-detect-interface: false'
-        tun="tun: {enable: true, stack: system$tun_meta}"
+        tun="tun: {enable: true, stack: mips$tun_meta}"
     else
         tun='tun: {enable: false}'
     fi
@@ -37,8 +37,8 @@ dns:
   default-nameserver: [ $dns_resolver ]
   direct-nameserver: [ $dns_nameserver ]
   enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.0/15
-  fake-ip-range6: fc00::/16
+  fake-ip-range: $fakeip4
+  fake-ip-range6: $fakeip6
   fake-ip-filter:
 EOF
         if [ "$dns_mod" = "mix" ] || [ "$dns_mod" = "fake-ip" ]; then
@@ -48,12 +48,27 @@ EOF
         fi
         #mix模式fakeip绕过cn
         [ "$dns_mod" = "mix" ] && echo '    - "rule-set:cn"' >>"$TMPDIR"/dns.yaml
+        #mix和route模式插入用户自定义直连域名
+        if [ "$dns_mod" = "mix" ] || [ "$dns_mod" = "route" ]; then
+            if [ -s "$CRASHDIR/configs/dns_direct_domains" ]; then
+                cat "$CRASHDIR/configs/dns_direct_domains" | grep -v '^#' | sed "s/^/    - '/" | sed "s/$/'/" >>"$TMPDIR"/dns.yaml
+            fi
+        fi
         #mix模式和route模式插入分流设置
         if [ "$dns_mod" = "mix" ] || [ "$dns_mod" = "route" ]; then
             [ "$dns_protect" != "OFF" ] && dns_final="$dns_fallback" || dns_final="$dns_nameserver"
+            # 构建nameserver-policy
+            echo "  respect-rules: true" >>"$TMPDIR"/dns.yaml
+            echo "  nameserver-policy:" >>"$TMPDIR"/dns.yaml
+            # 添加用户自定义直连域名
+            if [ -s "$CRASHDIR/configs/dns_direct_domains" ]; then
+                cat "$CRASHDIR/configs/dns_direct_domains" | grep -v '^#' | while read domain; do
+                    [ -n "$domain" ] && echo "    '$domain': [ $dns_nameserver ]" >>"$TMPDIR"/dns.yaml
+                done
+            fi
+            # 添加CN规则集
+            echo "    'rule-set:cn': [ $dns_nameserver ]" >>"$TMPDIR"/dns.yaml
             cat >>"$TMPDIR"/dns.yaml <<EOF
-  respect-rules: true
-  nameserver-policy: {'rule-set:cn': [ $dns_nameserver ]}
   proxy-server-nameserver : [ $dns_proxy_server ]
   nameserver: [ $dns_final ]
 EOF
@@ -121,6 +136,10 @@ split_and_customize_yaml_parts() {
     yaml_char='proxies proxy-groups proxy-providers rules rule-providers sub-rules listeners'
     for char in $yaml_char; do
         sed -n "/^$char:/,/^[a-z]/ { /^[a-z]/d; p; }" $core_config >"$TMPDIR"/${char}.yaml
+        #支持 Clash 常见的单行 flow-style 节点列表，例如 proxies: [{name: ..., type: ...}]
+        if [ "$char" = proxies ] && [ ! -s "$TMPDIR"/proxies.yaml ]; then
+            sed -n 's/^proxies:[[:space:]]*\[\(.*\)\][[:space:]]*$/  - \1/p' "$core_config" >"$TMPDIR"/proxies.yaml
+        fi
     done
     #跳过本地tls证书验证
     [ "$skip_cert" != "OFF" ] && sed -i 's/skip-cert-verify: false/skip-cert-verify: true/' "$TMPDIR"/proxies.yaml ||
@@ -201,6 +220,25 @@ add_custom_inbounds_and_rules() {
     }
 }
 
+preserve_geodata_yaml() {
+    #保留订阅规则依赖的Geo数据设置，本地自定义同名配置优先
+    : >"$TMPDIR"/geodata_base.yaml
+    : >"$TMPDIR"/geodata.yaml
+    for char in geodata-mode geodata-loader geosite-matcher geo-auto-update geo-update-interval geox-url; do
+        awk -v key="$char" '
+            /^[^[:space:]#]/ { emit = ($0 ~ ("^" key ":")) }
+            emit { print }
+        ' "$core_config" >>"$TMPDIR"/geodata_base.yaml
+    done
+    for char in geodata-mode geodata-loader geosite-matcher geo-auto-update geo-update-interval geox-url; do
+        grep -qE "^$char:" "$CRASHDIR"/yamls/user.yaml "$CRASHDIR"/yamls/others.yaml 2>/dev/null && continue
+        awk -v key="$char" '
+            /^[^[:space:]#]/ { emit = ($0 ~ ("^" key ":")) }
+            emit { print }
+        ' "$TMPDIR"/geodata_base.yaml >>"$TMPDIR"/geodata.yaml
+    done
+}
+
 merger_yaml() {
     #mix和route模式生成rule-providers
     [ "$dns_mod" = "mix" ] || [ "$dns_mod" = "route" ] && ! grep -Eq '^[[:space:]]*cn:' "$TMPDIR"/rule-providers.yaml && ! grep -q '^rule-providers' "$CRASHDIR"/yamls/others.yaml 2>/dev/null && {
@@ -229,8 +267,9 @@ merger_yaml() {
             yaml_add="$yaml_add $TMPDIR/${char}.yaml"
         }
     done
+    preserve_geodata_yaml
     #合并完整配置文件
-    cut -c 1- "$TMPDIR"/set.yaml $yaml_dns $yaml_hosts $yaml_user $yaml_others $yaml_add >"$TMPDIR"/config.yaml
+    cut -c 1- "$TMPDIR"/set.yaml "$TMPDIR"/geodata.yaml $yaml_dns $yaml_hosts $yaml_user $yaml_others $yaml_add >"$TMPDIR"/config.yaml
 }
 
 test_yaml() {
@@ -244,7 +283,7 @@ test_yaml() {
         sed -i "/#自定义策略组开始/,/#自定义策略组结束/d" "$TMPDIR"/proxy-groups.yaml
         mv -f "$TMPDIR"/set_bak.yaml "$TMPDIR"/set.yaml >/dev/null 2>&1
         #合并基础配置文件
-        cut -c 1- "$TMPDIR"/set.yaml $yaml_dns $yaml_add >"$TMPDIR"/config.yaml
+        cut -c 1- "$TMPDIR"/set.yaml "$TMPDIR"/geodata_base.yaml $yaml_dns $yaml_add >"$TMPDIR"/config.yaml
         sed -i "/#自定义/d" "$TMPDIR"/config.yaml
     fi
 }
@@ -253,7 +292,7 @@ finalize_clash_yaml() {
     #建立软连接
     [ ""$TMPDIR"" = ""$BINDIR"" ] || ln -sf "$TMPDIR"/config.yaml "$BINDIR"/config.yaml 2>/dev/null || cp -f "$TMPDIR"/config.yaml "$BINDIR"/config.yaml
     #清理缓存
-    for char in $yaml_char set set_bak dns hosts; do
+    for char in $yaml_char set set_bak dns hosts geodata geodata_base; do
         rm -f "$TMPDIR"/${char}.yaml
     done
 }
