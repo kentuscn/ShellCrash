@@ -23,8 +23,6 @@
 # 后缀匹配
 # DOMAIN-SUFFIX,oray.com
 # DOMAIN-SUFFIX,getui.com
-DOMAIN-SUFFIX,api-drive.mypikpak.com
-DOMAIN-SUFFIX,api-drive.mypikpak.net
 DOMAIN-SUFFIX,reuters.com
 # 肥羊订阅转换
 DOMAIN-SUFFIX,v1.mk
