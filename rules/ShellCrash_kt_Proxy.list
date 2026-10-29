@@ -26,7 +26,10 @@
 DOMAIN-SUFFIX,api-drive.mypikpak.com
 DOMAIN-SUFFIX,api-drive.mypikpak.net
 DOMAIN-SUFFIX,reuters.com
+# 肥羊订阅转换
 DOMAIN-SUFFIX,v1.mk
+# ShellCrash订阅转换
+DOMAIN-SUFFIX,jwsc.eu.org
 
 # 关键词匹配
 DOMAIN-KEYWORD,mypikpak
