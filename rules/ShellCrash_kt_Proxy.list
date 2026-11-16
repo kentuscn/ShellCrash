@@ -1,4 +1,4 @@
-# 本碎片只包含自己认为需要Proxy的服务
+# 本碎片只包含需要Proxy的服务
 # ====== 核心认知（非常重要）======
 # 必须记住：DOMAIN-SUFFIX ≠ 最优解
 # ------ 真正强的是 ------
@@ -27,8 +27,6 @@
 DOMAIN-SUFFIX,v1.mk
 # ShellCrash订阅转换
 DOMAIN-SUFFIX,jwsc.eu.org
-DOMAIN-SUFFIX,reuters.com
-DOMAIN-SUFFIX,capital.com
 DOMAIN-SUFFIX,mb3admin.com
 
 
@@ -36,8 +34,6 @@ DOMAIN-SUFFIX,mb3admin.com
 DOMAIN-KEYWORD,mypikpak
 DOMAIN-KEYWORD,pikpak
 DOMAIN-KEYWORD,1024
-DOMAIN-KEYWORD,yahoo.com
-DOMAIN-KEYWORD,cmegroup
 
 # 正则匹配
 # 例子：DOMAIN-REGEX,^.*\.example\.(com|net)$
