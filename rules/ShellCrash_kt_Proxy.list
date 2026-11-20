@@ -15,16 +15,40 @@
 # ---------------------------------------
 
 # ======= 域名类规则 ======
-
+---------------------------
 # 精确匹配
 # 例如：DOMAIN,example.com
-
-
+---------------------------
 # 后缀匹配
-# DOMAIN-SUFFIX,oray.com
-# DOMAIN-SUFFIX,getui.com
+# DOMAIN-SUFFIX,example.com
+---------------------------
+# 关键词匹配
+DOMAIN-KEYWORD,example
+
+# 小雅EMBY同步# 小雅 Emby 元数据同步服务器
+DOMAIN-SUFFIX,xiaoya.pro
+DOMAIN,emby-data.ymschh.top
+DOMAIN,emby-data.800686.xyz
+DOMAIN,embyxiaoya.laogl.top
+DOMAIN,icyou.eu.org
+DOMAIN,emby-data.f1rst.top
+DOMAIN,emby-data.ermaokj.cn
+DOMAIN,emby-data.poxi1221.eu.org
+DOMAIN,emby.raydoom.tk
+DOMAIN,emby-data.neversay.eu.org
+DOMAIN,emby.8.net.co
+DOMAIN,emby-data.bdbd.fun
+DOMAIN,emby-data.r2s.site
+DOMAIN,emby-data.xn--yetq23gxma.org
+DOMAIN,emby-data.younv.at
+DOMAIN,emby.kaiserver.uk
+DOMAIN,emby-data.wwwh.eu.org
+DOMAIN,emby-data.wx1.us.kg
+DOMAIN,emby-data.xnn.ee
+
 # 肥羊订阅转换
 DOMAIN-SUFFIX,v1.mk
+
 # ShellCrash订阅转换
 DOMAIN-SUFFIX,jwsc.eu.org
 DOMAIN-SUFFIX,mb3admin.com
