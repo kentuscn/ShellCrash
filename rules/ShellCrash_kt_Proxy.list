@@ -23,9 +23,9 @@
 # DOMAIN-SUFFIX,example.com
 ---------------------------
 # 关键词匹配
-DOMAIN-KEYWORD,example
+# DOMAIN-KEYWORD,example
 
-# 小雅EMBY同步# 小雅 Emby 元数据同步服务器
+# 小雅 Emby 元数据同步服务器
 DOMAIN-SUFFIX,xiaoya.pro
 DOMAIN,emby-data.ymschh.top
 DOMAIN,emby-data.800686.xyz
