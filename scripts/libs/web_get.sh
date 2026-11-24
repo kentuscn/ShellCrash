@@ -1,14 +1,14 @@
 . "$CRASHDIR"/libs/set_proxy.sh
 
-webget(){	
+webget() (
     if pidof CrashCore >/dev/null; then
         setproxy #设置临时代理，【$1】代表下载目录，【$2】代表在线地址
         url=$(printf '%s\n' "$2" |
-        sed -e 's#https://.*jsdelivr.net/gh/juewuy/ShellCrash[@|/]#https://raw.githubusercontent.com/juewuy/ShellCrash/#' \
-            -e 's#https://gh.jwsc.eu.org/#https://raw.githubusercontent.com/juewuy/ShellCrash/#')
+            sed -e 's#https://.*jsdelivr.net/gh/juewuy/ShellCrash[@|/]#https://raw.githubusercontent.com/juewuy/ShellCrash/#' \
+                -e 's#https://gh.jwsc.eu.org/#https://raw.githubusercontent.com/juewuy/ShellCrash/#')
     else
         url=$(printf '%s\n' "$2" |
-        sed 's#https://raw.githubusercontent.com/juewuy/ShellCrash/#https://testingcf.jsdelivr.net/gh/juewuy/ShellCrash@#')
+            sed 's#https://raw.githubusercontent.com/juewuy/ShellCrash/#https://testingcf.jsdelivr.net/gh/juewuy/ShellCrash@#')
     fi
     # ===============================================
 
@@ -16,28 +16,30 @@ webget(){
     #参数【$3】代表输出显示，【$4】不启用重定向
     #参数【$5】代表验证证书，【$6】使用自定义UA
     [ -n "$6" ] && agent="--user-agent $6"
+    #记录目标原本是否存在，下载失败时只清理本次新建的文件
+    target_existed=''
+    if [ -e "$1" ] || [ -L "$1" ]; then target_existed=1; fi
     if wget --help 2>&1 | grep -q 'show-progress' >/dev/null 2>&1; then
         [ "$3" = "echooff" ] && progress='-q' || progress='-q --show-progress'
         [ "$4" = "rediroff" ] && redirect='--max-redirect=0' || redirect=''
-        if [ "$5" = "skipceroff" ] || [ "$skip_cert" = OFF ];then
+        if [ "$5" = "skipceroff" ] || [ "$skip_cert" = OFF ]; then
             certificate=''
         else
             certificate='--no-check-certificate'
         fi
-        wget -Y on $agent $progress $redirect $certificate --timeout=3 -O "$1" "$url" && return 0 #成功则退出否则重试
-        wget -Y off $agent $progress $redirect $certificate --timeout=5 -O "$1" "$2"
-        return $?
+        wget_proxy on $agent $progress $redirect $certificate --timeout=3 -O "$1" "$url" && return 0 #成功则退出否则重试
+        wget_proxy off $agent $progress $redirect $certificate --timeout=5 -O "$1" "$2" && return 0
     elif curl --version >/dev/null 2>&1; then
-        if [ "$3" = "echooff" ];then
+        if [ "$3" = "echooff" ]; then
             progress='-s'
-        elif echo "$url" | grep -q 'jsdelivr.net';then
+        elif echo "$url" | grep -q 'jsdelivr.net'; then
             progress='-#'
             . "$CRASHDIR"/libs/web_get_curlbar.sh && curl_fsize
         else
             progress='-#'
         fi
         [ "$4" = "rediroff" ] && redirect='' || redirect='-L'
-        if [ "$5" = "skipceroff" ] || [ "$skip_cert" = OFF ];then
+        if [ "$5" = "skipceroff" ] || [ "$skip_cert" = OFF ]; then
             certificate=''
         else
             certificate='-k'
@@ -53,25 +55,28 @@ webget(){
         else
             result=$(curl $agent $auth_arg -w '%{http_code}' --connect-timeout 3 $progress $redirect $certificate -o "$1" "$url")
         fi
-
-        [ "$result" = "200" ] && return 0 #成功则退出否则重试
+        rc=$?
+        #传输中断时状态码仍可能是200，须同时检查curl退出码
+        [ "$rc" = 0 ] && [ "$result" = "200" ] && return 0 #成功则退出否则重试
         export https_proxy=""
         export http_proxy=""
-        
+
         if [ -n "$fsize_raw" ] && [ "$fsize_raw" -gt 204800 ]; then
             result=$(execute_curl "$1" "$2" "$fsize_raw" "$agent $redirect $certificate")
         else
             result=$(curl $agent -w '%{http_code}' --connect-timeout 5 $progress $redirect $certificate -o "$1" "$2")
         fi
-        [ "$result" = "200" ]
-        return $?
-    elif ckcmd wget;then
+        rc=$?
+        [ "$rc" = 0 ] && [ "$result" = "200" ] && return 0
+    elif ckcmd wget; then
         [ "$3" = "echooff" ] && progress='-q'
-        wget -Y on $progress -O "$1" "$url" && return 0 #成功则退出否则重试
-        wget -Y off $progress -O "$1" "$2"
-        return $?
+        wget_proxy on $progress -O "$1" "$url" && return 0 #成功则退出否则重试
+        wget_proxy off $progress -O "$1" "$2" && return 0
     else
         echo "No Curl or Wget！！！"
         return 1
     fi
-}
+    #下载失败：只删除本次新建的普通文件；原有文件、符号链接、设备文件(如/dev/null)一律保留
+    [ -z "$target_existed" ] && [ -f "$1" ] && [ ! -L "$1" ] && rm -f -- "$1"
+    return 1 #不透传wget的4、8等退出码，调用方以返回值1判定失败
+)
